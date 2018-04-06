@@ -1,0 +1,174 @@
+package br.com.cinemafx.dbcontrollers;
+
+import br.com.cinemafx.methods.Functions;
+import br.com.cinemafx.models.*;
+import br.com.cinemafx.views.dialogs.ModelException;
+
+import java.util.ArrayList;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+public class DBObjects {
+
+    private static Conexao conex = new Conexao(DBObjects.class);
+    private static ArrayList<Sala> salas = new ArrayList<Sala>();
+    private static ArrayList<Exibicao> exibicoes = new ArrayList<Exibicao>();
+    private static ArrayList<Genero> generos = new ArrayList<Genero>();
+    private static ArrayList<Filme> filmes = new ArrayList<Filme>();
+    private static ArrayList<Sessao> sessoes = new ArrayList<Sessao>();
+
+    public static ArrayList<Sala> reloadSala() {
+        conex.remakeConexao();
+        salas.clear();
+        try {
+            conex.createStatement("SELECT CODSALA, REFSALA, CAPACIDADE FROM TSALAS");
+            conex.createSet();
+            while (conex.rs.next()) {
+                salas.add(new Sala(
+                        conex.rs.getInt(1),
+                        conex.rs.getString(2),
+                        conex.rs.getInt(3)
+                ));
+            }
+        } catch (Exception ex) {
+            salas.clear();
+            new ModelException(DBObjects.class,
+                    String.format("Erro ao tentar atualizar lista de salas\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+        } finally {
+            conex.desconecta();
+            return salas;
+        }
+    }
+
+    public static ArrayList<Exibicao> reloadExibicoes() {
+        conex.remakeConexao();
+        exibicoes.clear();
+        try {
+            conex.createStatement("SELECT CODEXIB, NOMEEXIB, VLREXIB FROM TEXIBS");
+            conex.createSet();
+            while (conex.rs.next()) {
+                exibicoes.add(new Exibicao(
+                        conex.rs.getInt(1),
+                        conex.rs.getString(2),
+                        conex.rs.getDouble(3)
+                ));
+            }
+        } catch (Exception ex) {
+            exibicoes.clear();
+            new ModelException(DBObjects.class,
+                    String.format("Erro ao tentar atualizar lista de exibições\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+        } finally {
+            conex.desconecta();
+            return exibicoes;
+        }
+    }
+
+    public static ArrayList<Genero> reloadGeneros() {
+        conex.remakeConexao();
+        generos.clear();
+        try {
+            conex.createStatement("SELECT CODGENERO, NOMEGENERO FROM TGENEROS");
+            conex.createSet();
+            while (conex.rs.next()) {
+                generos.add(new Genero(
+                        conex.rs.getInt(1),
+                        conex.rs.getString(2)
+                ));
+            }
+        } catch (Exception ex) {
+            generos.clear();
+            new ModelException(DBObjects.class,
+                    String.format("Erro ao tentar atualizar lista de generos\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+        } finally {
+            conex.desconecta();
+            return generos;
+        }
+    }
+
+    public static ArrayList<Filme> reloadFilmes() {
+        conex.remakeConexao();
+        filmes.clear();
+        try {
+            conex.createStatement("SELECT CODFILME, NOMEFILME, SINOPSE,\n" +
+                    "CUSTOFILME, CODGENERO, MINFILME, IMAGEM\n" +
+                    "FROM TFILMES");
+            conex.createSet();
+            while (conex.rs.next()) {
+                int codGenero = conex.rs.getInt(5);
+                filmes.add(new Filme(
+                        conex.rs.getInt(1),
+                        conex.rs.getString(2),
+                        conex.rs.getString(3),
+                        conex.rs.getDouble(4),
+                        generos.stream().filter(genero ->
+                                genero.getCodGenero() == codGenero).findFirst().get(),
+                        conex.rs.getInt(6),
+                        Functions.getImgFromBlob(conex.rs.getBytes(7))
+                ));
+            }
+        } catch (Exception ex) {
+            filmes.clear();
+            new ModelException(DBObjects.class,
+                    String.format("Erro ao tentar atualizar lista de filmes\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+        } finally {
+            conex.desconecta();
+            return filmes;
+        }
+    }
+
+    public static ArrayList<Sessao> reloadSessoes() {
+        conex.remakeConexao();
+        filmes.clear();
+        try {
+            reloadSala();
+            reloadFilmes();
+            reloadExibicoes();
+            conex.createStatement("SELECT CODSESSAO, CODSALA, CODFILME, CODEXIB, DATAHORA FROM TSESSOES");
+            conex.createSet();
+            while (conex.rs.next()) {
+                int codSala = conex.rs.getInt(2);
+                int codFilme = conex.rs.getInt(3);
+                int codExib = conex.rs.getInt(4);
+                sessoes.add(new Sessao(
+                        conex.rs.getInt(1),
+                        salas.stream().filter(sala -> sala.getCodSala() == codSala).findFirst().get(),
+                        filmes.stream().filter(filme -> filme.getCodFilme() == codFilme).findFirst().get(),
+                        exibicoes.stream().filter(sessao -> sessao.getCodExibicao() == codExib).findFirst().get(),
+                        conex.rs.getTimestamp(5)
+                ));
+            }
+        } catch (Exception ex) {
+            sessoes.clear();
+            new ModelException(DBObjects.class,
+                    String.format("Erro ao tentar atualizar lista de sessões\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+        } finally {
+            conex.desconecta();
+            return sessoes;
+        }
+    }
+
+    public static ArrayList<Sala> getSalas() {
+        if (salas.isEmpty()) reloadSala();
+        return salas;
+    }
+
+    public static ArrayList<Exibicao> getExibicoes() {
+        if (exibicoes.isEmpty()) reloadExibicoes();
+        return exibicoes;
+    }
+
+    public static ArrayList<Genero> getGeneros() {
+        if (exibicoes.isEmpty()) reloadExibicoes();
+        return generos;
+    }
+
+    public static ArrayList<Filme> getFilmes() {
+        if (filmes.isEmpty()) reloadFilmes();
+        return filmes;
+    }
+
+    public static ArrayList<Sessao> getSessoes() {
+        if (sessoes.isEmpty()) reloadSessoes();
+        return sessoes;
+    }
+}
