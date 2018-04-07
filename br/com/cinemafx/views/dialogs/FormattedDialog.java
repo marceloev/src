@@ -1,5 +1,6 @@
 package br.com.cinemafx.views.dialogs;
 
+import br.com.cinemafx.methods.log.GravaLog;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Group;
@@ -30,8 +31,13 @@ public class FormattedDialog {
         alerta.getButtonTypes().clear();
         alerta.getButtonTypes().addAll(btnTypes);
         Optional<ButtonType> getChoosed = alerta.showAndWait();
-        if (getChoosed.get() == btnTypes[0]) return 0;
-        else return 1;
+        if (getChoosed.get() == btnTypes[0]) {
+            GravaLog.gravaInfo(invocador, "Opção selecionada: " + arrayButtons.get(0));
+            return 0;
+        } else {
+            GravaLog.gravaInfo(invocador, "Opção selecionada: " + arrayButtons.get(1));
+            return 1;
+        }
     }
 
     public static Pair<Boolean, Integer> getYesNoDialog(Class invocador, String mensagem, String mensagemCheck, String[] buttons) {
@@ -62,7 +68,12 @@ public class FormattedDialog {
         alerta.setGraphic(graphic);
         alerta.setContentText(mensagem);
         Optional<ButtonType> getChoosed = alerta.showAndWait();
-        if (getChoosed.get() == btnTypes[0]) return new Pair<>(selected.getValue(), 0);
-        else return new Pair<>(selected.getValue(), 1);
+        if (getChoosed.get() == btnTypes[0]) {
+            GravaLog.gravaInfo(invocador, "Opção selecionada: " + arrayButtons.get(0));
+            return new Pair<>(selected.getValue(), 0);
+        } else {
+            GravaLog.gravaInfo(invocador, "Opção selecionada: " + arrayButtons.get(1));
+            return new Pair<>(selected.getValue(), 1);
+        }
     }
 }

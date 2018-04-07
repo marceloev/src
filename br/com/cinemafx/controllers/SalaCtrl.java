@@ -1,7 +1,10 @@
 package br.com.cinemafx.controllers;
 
+import br.com.cinemafx.dbcontrollers.DBBoss;
 import br.com.cinemafx.dbcontrollers.DBObjects;
+import br.com.cinemafx.methods.MaskField;
 import br.com.cinemafx.models.*;
+import br.com.cinemafx.views.dialogs.FormattedDialog;
 import br.com.cinemafx.views.dialogs.ModelDialog;
 import br.com.cinemafx.views.dialogs.ModelException;
 import javafx.collections.FXCollections;
@@ -12,6 +15,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -29,6 +34,10 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
             btnEditar, btnDuplicar, btnExcluir, btnPrimeiro, btnAnterior, btnProximo, btnUltimo;
     @FXML
     private Label lblMensagem;
+    @FXML
+    private TextField txfCodigo, txfReferencia;
+    @FXML
+    private Spinner<Integer> spnCapacidade;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -48,10 +57,9 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
     public void appCalls() {
         paneForm.setVisible(false);
         paneGrade.setVisible(true);
-        paneForm.visibleProperty().addListener((obs, isV, wasV) -> {
-            paneGrade.setVisible(wasV);
-            System.out.println("paneGrade is Visible: " + wasV);
-            if (isV) {
+        paneForm.visibleProperty().addListener((obs, oldV, newV) -> {
+            paneGrade.setVisible(oldV);
+            if (newV) {
                 btnView.setGraphic(imgForm);
                 btnView.getTooltip().setText("Modo Formulário");
             } else {
@@ -61,17 +69,64 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         });
         tbvSalas.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvSalas.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> showInForm(newV));
+        tbvSalas.setOnMouseClicked(e -> {
+            if (e.getClickCount() > 1) paneForm.setVisible(true);
+        });
         btnView.setOnAction(e -> ctrlAction(FrameAction.ChangeView));
         btnAtualizar.setOnAction(e -> ctrlAction(FrameAction.Atualizar));
+        btnAdicionar.setOnAction(e -> ctrlAction(FrameAction.Adicionar));
+        btnSalvar.setOnAction(e -> ctrlAction(FrameAction.Salvar));
+        btnCancelar.setOnAction(e -> ctrlAction(FrameAction.Cancelar));
+        btnEditar.setOnAction(e -> ctrlAction(FrameAction.Editar));
+        btnDuplicar.setOnAction(e -> ctrlAction(FrameAction.Duplicar));
+        btnExcluir.setOnAction(e -> ctrlAction(FrameAction.Excluir));
         btnPrimeiro.setOnAction(e -> ctrlAction(FrameAction.Primeiro));
         btnAnterior.setOnAction(e -> ctrlAction(FrameAction.Anterior));
         btnProximo.setOnAction(e -> ctrlAction(FrameAction.Proximo));
         btnUltimo.setOnAction(e -> ctrlAction(FrameAction.Ultimo));
+        MaskField.NumberField(txfCodigo, 22);
+        MaskField.MaxCharField(txfReferencia, 25);
+        MaskField.SpnFieldCtrl(spnCapacidade, 1, 999);
+        propFrameStatus.addListener((obs, oldV, newV) -> {
+            if (newV.intValue() == 1) btnEditar.fire(); //Alterando
+            else if (newV.intValue() == 2) btnAdicionar.fire(); //Adicionando
+        });
+        txfCodigo.focusedProperty().addListener((obs, oldV, newV) -> {
+            if (oldV && !isAtualizando() && getFrameStatus() == FrameStatus.Status.Visualizando) { //FocusLost to Search
+                tbvSalas.getSelectionModel().clearSelection();
+                if (txfCodigo.getText().isEmpty()) {
+                    sendMensagem(lblMensagem, false, "Informe algum código válido para pesquisar");
+                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                    return;
+                }
+                long exists = salaObservableList.stream()
+                        .filter(sala -> sala.getCodSala() == Integer.valueOf(txfCodigo.getText()))
+                        .count();
+                if (exists > 0)
+                    tbvSalas.getSelectionModel().select(
+                            salaObservableList.stream()
+                                    .filter(sala -> sala.getCodSala() == Integer.valueOf(txfCodigo.getText())).findFirst().get());
+                else {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            String.format("Sala não encontrada para o código: %s", txfCodigo.getText())).getAlert().showAndWait();
+                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                }
+            }
+        });
+        txfReferencia.textProperty().addListener((obs, oldV, newV) -> {
+            if (isAtualizando()) return;
+            notifyEdit(() -> getCachedSala().setRefSala(newV));
+        });
+        spnCapacidade.getValueFactory().valueProperty().addListener((obs, oldV, newV) -> {
+            if (isAtualizando()) return;
+            notifyEdit(() -> getCachedSala().setCapacidade(newV));
+        });
     }
 
     @Override
     public void init() {
         loadTableValues();
+        tbvSalas.getSelectionModel().select(0);
     }
 
     @Override
@@ -79,7 +134,7 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         try {
             salaObservableList.clear();
             salaObservableList.addAll(DBObjects.reloadSala().stream().filter(sala -> sala.getCodSala() != 0).collect(Collectors.toList()));
-            sendMensagem(lblMensagem, "Tabela de Salas atualizada com sucesso!");
+            sendMensagem(lblMensagem, true, "Tabela de Salas atualizada com sucesso!");
         } catch (Exception ex) {
             new ModelException(this.getClass(),
                     String.format("Erro ao tentar atualizar tabela de salas\n%s", ex.getMessage()), ex)
@@ -99,36 +154,123 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
     }
 
     private void showInForm(Sala sala) {
-        if (sala == null) return;
-        ctrlLinhasTab(tbvSalas.getItems().indexOf(sala), true);
+        if (getFrameStatus() != FrameStatus.Status.Visualizando) {
+            int choice = FormattedDialog.getYesNoDialog(this.getClass(),
+                    "Foram detectadas alterações não salvas\nDeseja salvar estas alterações antes de sair do registro?",
+                    new String[]{"Salvar", "Cancelar"});
+            if (choice == 0)
+                btnSalvar.fire();
+            else
+                btnCancelar.fire();
+        }
         setAtualizando(true);
-        setCachedSala(sala);
+        if (sala == null) { //Limpar os campos
+            setCachedSala(new Sala());
+            //txfCodigo.clear();
+            txfReferencia.clear();
+            spnCapacidade.getValueFactory().setValue(1);
+        } else {
+            setCachedSala(sala);
+            txfCodigo.setText(String.valueOf(getCachedSala().getCodSala()));
+            txfReferencia.setText(getCachedSala().getRefSala());
+            spnCapacidade.getValueFactory().setValue(getCachedSala().getCapacidade());
+            ctrlLinhasTab(tbvSalas.getItems().indexOf(sala), true);
+        }
         setAtualizando(false);
+
     }
 
     @Override
     public void ctrlAction(FrameAction frameAction) {
         switch (frameAction) {
             case ChangeView:
-                paneForm.setVisible(!paneForm.isVisible());
+                paneForm.setVisible(paneGrade.isVisible());
                 break;
             case Atualizar:
+                setFrameStatus(FrameStatus.Status.Visualizando);
+                disableButtons(false);
                 loadTableValues();
-                tbvSalas.getSelectionModel().select(tbvSalas.getItems().stream()
-                        .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
-                        .findFirst().get()); //Keep old Selection, não fazer try catch pois causa NuSuchFileException
+                try {
+                    tbvSalas.getSelectionModel().select(tbvSalas.getItems().stream()
+                            .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
+                            .findFirst().get());
+                } catch (NoSuchElementException ex) {
+                    sendMensagem(lblMensagem, false, "Registro pré-selecionado não existe mais");
+                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                }
                 break;
             case Adicionar:
+                setFrameStatus(FrameStatus.Status.Adicionando);
+                showInForm(null);
+                disableButtons(true);
                 break;
             case Salvar:
+                if (getFrameStatus() == FrameStatus.Status.Adicionando) {
+                    try {
+                        DBBoss.inseriSala(this.getClass(), getCachedSala());
+                        disableButtons(false);
+                        setFrameStatus(FrameStatus.Status.Visualizando);
+                        sendMensagem(lblMensagem, true, String.format("Sala %d - %s cadastrada com sucesso",
+                                getCachedSala().getCodSala(), getCachedSala().getRefSala()));
+                    } catch (Exception ex) {
+                        new ModelException(this.getClass(),
+                                String.format("Erro ao tentar cadastrar nova sala\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                    }
+                } else if (getFrameStatus() == FrameStatus.Status.Alterando) {
+                    try {
+                        DBBoss.alteraSala(this.getClass(), getCachedSala());
+                        disableButtons(false);
+                        setFrameStatus(FrameStatus.Status.Visualizando);
+                        sendMensagem(lblMensagem, true, String.format("Sala %d - %s alterada com sucesso",
+                                getCachedSala().getCodSala(), getCachedSala().getRefSala()));
+                    } catch (Exception ex) {
+                        new ModelException(this.getClass(),
+                                String.format("Erro ao tentar alterar sala\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                    }
+                }
                 break;
             case Cancelar:
+                setFrameStatus(FrameStatus.Status.Visualizando);
+                disableButtons(false);
+                salaObservableList.clear();
+                salaObservableList.addAll(DBObjects.getSalas().stream().filter(sala -> sala.getCodSala() != 0).collect(Collectors.toList()));
+                try {
+                    tbvSalas.getSelectionModel().select(tbvSalas.getItems().stream()
+                            .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
+                            .findFirst().get());
+                    System.out.println(salaObservableList.stream()
+                            .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
+                            .findFirst().get().getRefSala());
+                } catch (NoSuchElementException ex) {
+                    sendMensagem(lblMensagem, false, "Registro pré-selecionado não existe mais");
+                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                }
                 break;
             case Editar:
+                setFrameStatus(FrameStatus.Status.Alterando);
+                disableButtons(true);
                 break;
             case Duplicar:
                 break;
             case Excluir:
+                StringBuilder salas = new StringBuilder();
+                for (Sala sala : tbvSalas.getSelectionModel().getSelectedItems()) {
+                    salas.append(String.format("\n%d - %s", sala.getCodSala(), sala.getRefSala()));
+                }
+                int resp = FormattedDialog.getYesNoDialog(this.getClass(),
+                        "Deseja realmente excluir a(s) sala(s) selecionada(s)?" + salas.toString(),
+                        new String[]{"Confirmar", "Cancelar"});
+                if (resp == 0)
+                    try {
+                        ArrayList<Integer> codSalas = new ArrayList<>();
+                        tbvSalas.getSelectionModel().getSelectedItems().forEach(sala -> codSalas.add(sala.getCodSala()));
+                        DBBoss.excluiSala(this.getClass(), codSalas);
+                        loadTableValues();
+                        sendMensagem(lblMensagem, true, "Sala(s) excluída(s) com sucesso");
+                    } catch (Exception ex) {
+                        new ModelException(this.getClass(),
+                                String.format("Erro ao tentar excluir sala(s)\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                    }
                 break;
             case Primeiro:
                 ctrlLinhasTab(0, false);
@@ -146,6 +288,26 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
             case Ultimo:
                 ctrlLinhasTab(tbvSalas.getItems().size() - 1, false);
                 break;
+        }
+    }
+
+    private void disableButtons(Boolean disable) {
+        if (disable) {
+            btnAtualizar.setDisable(true);
+            btnAdicionar.setDisable(true);
+            btnSalvar.setDisable(false);
+            btnCancelar.setDisable(false);
+            btnEditar.setDisable(true);
+            btnDuplicar.setDisable(true);
+            btnExcluir.setDisable(true);
+        } else {
+            btnAtualizar.setDisable(false);
+            btnAdicionar.setDisable(false);
+            btnSalvar.setDisable(true);
+            btnCancelar.setDisable(true);
+            btnEditar.setDisable(false);
+            btnDuplicar.setDisable(false);
+            btnExcluir.setDisable(false);
         }
     }
 

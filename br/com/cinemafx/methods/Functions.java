@@ -39,4 +39,8 @@ public class Functions {
         }
         return paramBuilder;
     }
+
+    public static int getOnlyNumbers(String valor) {
+        return Integer.valueOf(valor.replaceAll("[^0-9]", ""));
+    }
 }
