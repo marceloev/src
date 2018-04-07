@@ -7,6 +7,7 @@ import br.com.cinemafx.models.*;
 import br.com.cinemafx.views.dialogs.FormattedDialog;
 import br.com.cinemafx.views.dialogs.ModelDialog;
 import br.com.cinemafx.views.dialogs.ModelException;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -89,7 +90,6 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         MaskField.SpnFieldCtrl(spnCapacidade, 1, 999);
         propFrameStatus.addListener((obs, oldV, newV) -> {
             if (newV.intValue() == 1) btnEditar.fire(); //Alterando
-            else if (newV.intValue() == 2) btnAdicionar.fire(); //Adicionando
         });
         txfCodigo.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV && !isAtualizando() && getFrameStatus() == FrameStatus.Status.Visualizando) { //FocusLost to Search
@@ -112,6 +112,13 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                     tbvSalas.getSelectionModel().clearAndSelect(0);
                 }
             }
+        });
+        txfCodigo.textProperty().addListener((obs, oldV, newV) -> {
+            if (newV.isEmpty() || isAtualizando() || getFrameStatus() != FrameStatus.Status.Adicionando) return;
+            new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                    "Na criação de registros, é bloqueado a digitação dos códigos\n" +
+                            "Essa trava tem a funcionalidade de evitar duplicidade.").getAlert().showAndWait();
+            Platform.runLater(() -> txfCodigo.clear());
         });
         txfReferencia.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
@@ -160,24 +167,17 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                     new String[]{"Salvar", "Cancelar"});
             if (choice == 0)
                 btnSalvar.fire();
-            else
-                btnCancelar.fire();
+            if (getFrameStatus() != FrameStatus.Status.Visualizando) //Deu erro na tentativa de salvar
+                return;
         }
+        if (sala == null) return;
         setAtualizando(true);
-        if (sala == null) { //Limpar os campos
-            setCachedSala(new Sala());
-            //txfCodigo.clear();
-            txfReferencia.clear();
-            spnCapacidade.getValueFactory().setValue(1);
-        } else {
-            setCachedSala(sala);
-            txfCodigo.setText(String.valueOf(getCachedSala().getCodSala()));
-            txfReferencia.setText(getCachedSala().getRefSala());
-            spnCapacidade.getValueFactory().setValue(getCachedSala().getCapacidade());
-            ctrlLinhasTab(tbvSalas.getItems().indexOf(sala), true);
-        }
+        setCachedSala(sala);
+        txfCodigo.setText(String.valueOf(getCachedSala().getCodSala()));
+        txfReferencia.setText(getCachedSala().getRefSala());
+        spnCapacidade.getValueFactory().setValue(getCachedSala().getCapacidade());
+        ctrlLinhasTab(tbvSalas.getItems().indexOf(sala), true);
         setAtualizando(false);
-
     }
 
     @Override
@@ -200,16 +200,22 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                 }
                 break;
             case Adicionar:
+                paneForm.setVisible(true);
                 setFrameStatus(FrameStatus.Status.Adicionando);
-                showInForm(null);
+                txfCodigo.clear(); //Não precisa colocar runEdits pois, o FrameStatus = Adicionando não ativa o EditMode
+                txfReferencia.clear();
+                spnCapacidade.getValueFactory().setValue(1);
                 disableButtons(true);
                 break;
             case Salvar:
                 if (getFrameStatus() == FrameStatus.Status.Adicionando) {
                     try {
-                        DBBoss.inseriSala(this.getClass(), getCachedSala());
+                        int idInserted = DBBoss.inseriSala(this.getClass(), getCachedSala());
+                        getCachedSala().setCodSala(idInserted);
+                        System.out.println(idInserted);
                         disableButtons(false);
                         setFrameStatus(FrameStatus.Status.Visualizando);
+                        ctrlAction(FrameAction.Atualizar);
                         sendMensagem(lblMensagem, true, String.format("Sala %d - %s cadastrada com sucesso",
                                 getCachedSala().getCodSala(), getCachedSala().getRefSala()));
                     } catch (Exception ex) {
@@ -221,6 +227,7 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                         DBBoss.alteraSala(this.getClass(), getCachedSala());
                         disableButtons(false);
                         setFrameStatus(FrameStatus.Status.Visualizando);
+                        ctrlAction(FrameAction.Atualizar);
                         sendMensagem(lblMensagem, true, String.format("Sala %d - %s alterada com sucesso",
                                 getCachedSala().getCodSala(), getCachedSala().getRefSala()));
                     } catch (Exception ex) {
@@ -230,27 +237,19 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                 }
                 break;
             case Cancelar:
-                setFrameStatus(FrameStatus.Status.Visualizando);
-                disableButtons(false);
-                salaObservableList.clear();
-                salaObservableList.addAll(DBObjects.getSalas().stream().filter(sala -> sala.getCodSala() != 0).collect(Collectors.toList()));
-                try {
-                    tbvSalas.getSelectionModel().select(tbvSalas.getItems().stream()
-                            .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
-                            .findFirst().get());
-                    System.out.println(salaObservableList.stream()
-                            .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
-                            .findFirst().get().getRefSala());
-                } catch (NoSuchElementException ex) {
-                    sendMensagem(lblMensagem, false, "Registro pré-selecionado não existe mais");
-                    tbvSalas.getSelectionModel().clearAndSelect(0);
-                }
+                //Até agora, não descobri uma forma de "cancelar" sem ter que re-buscar no banco, terei que estudar
+                ctrlAction(FrameAction.Atualizar);
+                sendMensagem(lblMensagem, true, "Operação cancelada pelo usuário");
                 break;
             case Editar:
                 setFrameStatus(FrameStatus.Status.Alterando);
                 disableButtons(true);
                 break;
             case Duplicar:
+                paneForm.setVisible(true);
+                setFrameStatus(FrameStatus.Status.Adicionando);
+                txfCodigo.clear(); //Não precisa colocar runEdits pois, o FrameStatus = Adicionando não ativa o EditMode
+                disableButtons(true);
                 break;
             case Excluir:
                 StringBuilder salas = new StringBuilder();
@@ -265,7 +264,7 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                         ArrayList<Integer> codSalas = new ArrayList<>();
                         tbvSalas.getSelectionModel().getSelectedItems().forEach(sala -> codSalas.add(sala.getCodSala()));
                         DBBoss.excluiSala(this.getClass(), codSalas);
-                        loadTableValues();
+                        ctrlAction(FrameAction.Atualizar);
                         sendMensagem(lblMensagem, true, "Sala(s) excluída(s) com sucesso");
                     } catch (Exception ex) {
                         new ModelException(this.getClass(),

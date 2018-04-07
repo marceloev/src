@@ -70,13 +70,13 @@ public class Conexao {
     }
 
     public void addParametro(Object objeto) throws SQLException {
+        GravaLog.gravaInfo(invocador, String.format("%dº Parâmetro(%s): %s", index, objeto.getClass(), objeto));
         if (objeto == null) addToStatement(index, null, "java.cinemafx.NullParameter");
         else addToStatement(index, objeto, objeto.getClass().getTypeName());
         index++;
     }
 
     private void addToStatement(int index, Object objeto, String type) throws SQLException {
-        GravaLog.gravaInfo(invocador, String.format("%dº Parâmetro(%s): %s", index, type, objeto));
         switch (type) {
             case "java.cinemafx.NullParameter":
                 pst.setObject(index, null);
@@ -107,13 +107,7 @@ public class Conexao {
                 break;
             case "java.util.ArrayList":
                 ArrayList<Object> arrayObj = (ArrayList<Object>) objeto;
-                for (Object obj : arrayObj) {
-                    String objType = obj.getClass().getTypeName();
-                    GravaLog.gravaInfo(invocador, index + "º Parâmetro(" + objType + "): " + obj);
-                    addToStatement(index, obj, objType);
-                    index = index + 1;
-                }
-                this.index = index - 1;
+                for (Object obj : arrayObj) addParametro(obj);
                 break;
             default:
                 throw new SQLException(String.format("Erro ao tentar inserir parâmetro no Statement\n" +

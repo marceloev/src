@@ -1,7 +1,6 @@
 package br.com.cinemafx.controllers;
 
 import br.com.cinemafx.views.dialogs.ModelException;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
