@@ -2,10 +2,13 @@
 
 <?import com.jfoenix.controls.JFXButton?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.image.Image?>
@@ -14,8 +17,9 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
 
-<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/9.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.cinemafx.controllers.SalaCtrl">
+<AnchorPane prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/9.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.cinemafx.controllers.FilmeCtrl">
    <children>
       <VBox layoutY="-5.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
@@ -23,10 +27,10 @@
                <children>
                   <ImageView fitHeight="37.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true" HBox.hgrow="NEVER">
                      <image>
-                        <Image url="@../images/Cadeira.png" />
+                        <Image url="@../images/Filme.png" />
                      </image>
                   </ImageView>
-                  <Label alignment="CENTER" prefHeight="47.0" prefWidth="230.0" text="Salas" textAlignment="CENTER" underline="true" HBox.hgrow="NEVER">
+                  <Label alignment="CENTER" prefHeight="47.0" prefWidth="230.0" text="Filmes" textAlignment="CENTER" underline="true" HBox.hgrow="NEVER">
                      <font>
                         <Font size="32.0" />
                      </font>
@@ -288,25 +292,110 @@
       </VBox>
       <AnchorPane fx:id="paneGrade" layoutX="10.0" layoutY="60.0" prefHeight="200.0" prefWidth="200.0" visible="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="50.0">
          <children>
-            <TableView fx:id="tbvSalas" prefHeight="200.0" prefWidth="200.0" tableMenuButtonVisible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-               <columnResizePolicy>
-                  <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-               </columnResizePolicy>
-            </TableView>
+            <TableView fx:id="tbvFilmes" prefHeight="200.0" prefWidth="200.0" tableMenuButtonVisible="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="paneForm" layoutX="142.0" layoutY="238.0" prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: white;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="50.0">
          <children>
             <Label layoutX="14.0" layoutY="14.0" text="Código: " />
             <TextField fx:id="txfCodigo" alignment="CENTER" layoutX="14.0" layoutY="31.0" prefHeight="25.0" prefWidth="99.0" />
-            <Label layoutX="14.0" layoutY="63.0" text="Referência:" />
-            <TextField fx:id="txfReferencia" alignment="CENTER" layoutX="14.0" layoutY="80.0" prefHeight="25.0" prefWidth="340.0" />
-            <Label layoutX="14.0" layoutY="114.0" text="Capacidade:" />
-            <Spinner fx:id="spnCapacidade" editable="true" layoutX="14.0" layoutY="131.0">
-               <opaqueInsets>
-                  <Insets />
-               </opaqueInsets>
-            </Spinner>
+            <Label layoutX="14.0" layoutY="63.0" text="Nome:" />
+            <TextField fx:id="txfNome" alignment="CENTER" layoutX="14.0" layoutY="80.0" prefHeight="25.0" prefWidth="383.0" />
+            <Label layoutX="14.0" layoutY="114.0" text="Custo:" />
+            <TextField fx:id="txfCusto" layoutX="14.0" layoutY="131.0" prefHeight="25.0" prefWidth="164.0" />
+            <Label layoutX="14.0" layoutY="165.0" text="Duração (Min.):" />
+            <Spinner fx:id="spnDuracao" editable="true" layoutX="14.0" layoutY="182.0" prefHeight="25.0" prefWidth="164.0" />
+            <Label layoutX="14.0" layoutY="218.0" text="Gênero:" />
+            <ComboBox fx:id="cbbGenero" editable="true" layoutX="14.0" layoutY="235.0" prefHeight="25.0" prefWidth="266.0" promptText="Sem Gênero" />
+            <TextArea fx:id="txaSinopse" layoutX="15.0" layoutY="264.0" prefHeight="282.0" prefWidth="383.0" promptText="Sem sinopse" wrapText="true" AnchorPane.bottomAnchor="3.0" AnchorPane.leftAnchor="15.0" AnchorPane.topAnchor="265.0" />
+            <VBox layoutX="422.0" layoutY="9.0" AnchorPane.bottomAnchor="3.0" AnchorPane.leftAnchor="420.0" AnchorPane.rightAnchor="3.0" AnchorPane.topAnchor="10.0">
+               <children>
+                  <HBox alignment="CENTER" prefHeight="28.0" prefWidth="383.0">
+                     <children>
+                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Cartaz:" underline="true" HBox.hgrow="ALWAYS">
+                           <font>
+                              <Font size="18.0" />
+                           </font>
+                           <HBox.margin>
+                              <Insets left="5.0" />
+                           </HBox.margin>
+                        </Text>
+                        <HBox alignment="CENTER_LEFT" prefHeight="21.0" prefWidth="197.0" spacing="5.0" HBox.hgrow="ALWAYS">
+                           <children>
+                              <JFXButton fx:id="btnLimparImg" contentDisplay="GRAPHIC_ONLY" layoutX="178.0" layoutY="10.0">
+                                 <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="35.0" pickOnBounds="true" preserveRatio="true">
+                                       <image>
+                                          <Image url="@../images/Icone_Limpar.png" />
+                                       </image>
+                                    </ImageView>
+                                 </graphic>
+                                 <tooltip>
+                                    <Tooltip text="Remover Imagem">
+                                       <font>
+                                          <Font size="14.0" />
+                                       </font>
+                                    </Tooltip>
+                                 </tooltip>
+                                 <cursor>
+                                    <Cursor fx:constant="HAND" />
+                                 </cursor>
+                              </JFXButton>
+                              <JFXButton fx:id="btnDownloadImg" contentDisplay="GRAPHIC_ONLY">
+                                 <graphic>
+                                    <ImageView fitHeight="17.0" fitWidth="17.0" pickOnBounds="true" preserveRatio="true">
+                                       <image>
+                                          <Image url="@../images/Icone_Baixar.png" />
+                                       </image>
+                                    </ImageView>
+                                 </graphic>
+                                 <tooltip>
+                                    <Tooltip text="Baixar Imagem">
+                                       <font>
+                                          <Font size="14.0" />
+                                       </font>
+                                    </Tooltip>
+                                 </tooltip>
+                                 <cursor>
+                                    <Cursor fx:constant="HAND" />
+                                 </cursor>
+                              </JFXButton>
+                              <JFXButton fx:id="btnUploadImg" contentDisplay="GRAPHIC_ONLY" layoutX="178.0" layoutY="10.0">
+                                 <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="35.0" pickOnBounds="true" preserveRatio="true">
+                                       <image>
+                                          <Image url="@../images/Icone_Upload.png" />
+                                       </image>
+                                    </ImageView>
+                                 </graphic>
+                                 <tooltip>
+                                    <Tooltip text="Atualizar Imagem">
+                                       <font>
+                                          <Font size="14.0" />
+                                       </font>
+                                    </Tooltip>
+                                 </tooltip>
+                                 <cursor>
+                                    <Cursor fx:constant="HAND" />
+                                 </cursor>
+                              </JFXButton>
+                           </children>
+                           <opaqueInsets>
+                              <Insets />
+                           </opaqueInsets>
+                           <HBox.margin>
+                              <Insets left="30.0" />
+                           </HBox.margin>
+                        </HBox>
+                     </children>
+                  </HBox>
+                  <ImageView fx:id="imgFilme" fitHeight="438.0" fitWidth="383.0" pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/Icon_Sem_Imagem.png" />
+                     </image>
+                  </ImageView>
+               </children>
+            </VBox>
          </children></AnchorPane>
    </children>
 </AnchorPane>

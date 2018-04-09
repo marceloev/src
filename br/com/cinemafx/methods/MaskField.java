@@ -3,47 +3,30 @@ package br.com.cinemafx.methods;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 public class MaskField {
 
-    private static Boolean IsAtualizando = true;
+    private static Boolean isAtualizando = false;
 
-    public static void MaxCharField(TextField Txt, int Max) {
-        Txt.caretPositionProperty().addListener((observableValue, oldValue, newValue) -> {
-            if (Txt.getText() != null && Txt.getLength() > Max) {
-                if (IsAtualizando == true) {
-                    Platform.runLater(() -> {
-                        IsAtualizando = false;
-                        Txt.deleteText(Max, Txt.getLength());
-                        IsAtualizando = true;
-                    });
-                }
-            }
+    public static void MaxCharField(TextField txt, int max) {
+        txt.lengthProperty().addListener((observableValue, oldValue, newValue) -> {
+            if (txt.getText().isEmpty() || isAtualizando) return;
+            if (txt.getLength() > max) txt.deleteText(max, txt.getLength());
         });
     }
 
-    public static void MaxUpperCharField(TextField Txt, int Max) {
-        Txt.caretPositionProperty().addListener((observableValue, oldValue, newValue) -> {
-            if (Txt.getText() != null) {
-                if (IsAtualizando) {
-                    Platform.runLater(() -> {
-                        IsAtualizando = false;
-                        if (Txt.getLength() > Max) {
-                            Txt.deleteText(Max, Txt.getLength());
-                        }
-                        Txt.setText(Txt.getText().toUpperCase());
-                        Txt.positionCaret(Txt.getLength()); //É necessário pois, no setText() o cursor fica desconfigurado
-                        IsAtualizando = true;
-                    });
-                }
-            }
-        });
-    }
-
-    public static void CharField(TextField Txt, int Max) {
-        Txt.lengthProperty().addListener((obs, oldV, newV) -> {
-            if (Txt.getLength() > Max && Max > 0) {
-                Txt.deleteText(Max, Txt.getLength());
-            }
+    public static void MaxUpperCharField(TextField txt, int max) {
+        txt.caretPositionProperty().addListener((observableValue, oldValue, newValue) -> {
+            if (txt.getText().isEmpty() || isAtualizando) return;
+            Platform.runLater(() -> {
+                isAtualizando = true;
+                if (txt.getLength() > max) txt.deleteText(max, txt.getLength());
+                txt.setText(txt.getText().toUpperCase());
+                txt.positionCaret(txt.getLength());
+                isAtualizando = false;
+            });
         });
     }
 
@@ -74,49 +57,44 @@ public class MaskField {
         });
     }
 
+    public static void MoneyField(TextField txf, int max) { //Corrigir
+        txf.setPromptText("R$0,00");
+        txf.lengthProperty().addListener((obs, oldV, newV) -> {
+            if (txf.getText().isEmpty() || isAtualizando) return;
+            if (txf.getLength() > max
+                    || (!txf.getText().matches("[0-9]{1,}[.||,]{1}[0-9]{0,2}")
+                    && !txf.getText().matches("[0-9]{1,}")))
+                try {
+                    txf.deleteText(oldV.intValue(), newV.intValue());
+                } catch (Exception ex) {
+                    txf.clear();
+                }
+        });
+    }
+
     public static void NCMField(TextField Txt) {
         Txt.lengthProperty().addListener((observableValue, oldV, newV) -> {
-            if (IsAtualizando) { //Não pode ser Platform.RunLater, se não cai no textproperty
-                IsAtualizando = false;
+            if (isAtualizando) { //Não pode ser Platform.RunLater, se não cai no textproperty
+                isAtualizando = false;
                 String text = getOnlyDigits(Txt.getText());
                 if (text.length() > 8) text = text.substring(0, 8);
                 text = text.replaceFirst("(\\d{6})(\\d)", "$1.$2");
                 text = text.replaceFirst("(\\d{4})(\\d)", "$1.$2");
                 Txt.setText(text);
                 Platform.runLater(() -> Txt.positionCaret(Txt.getLength()));
-                IsAtualizando = true;
+                isAtualizando = true;
             }
         });
     }
 
-    public static void SpnFieldCtrl(Spinner<Integer> Spn, Integer Min, Integer Max) {
-        Spn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(Min, Max, Min));
-        String value = "" + Max;
-        NumberField(Spn.getEditor(), value.length());
-        Spn.getEditor().textProperty().addListener((obs, oldV, newV) -> {
-            if (!newV.matches(oldV)) {
-                Platform.runLater(() -> {
-                    if (IsAtualizando) {
-                        if (Spn.getEditor().getLength() == 0 || Functions.getOnlyNumbers(Spn.getEditor().getText()) < Min) {
-                            IsAtualizando = false;
-                            Spn.getEditor().setText("" + Min);
-                            IsAtualizando = true;
-                        } else if (Integer.valueOf(Spn.getEditor().getText()) > Max) {
-                            IsAtualizando = false;
-                            Spn.getEditor().setText("" + Max);
-                            IsAtualizando = true;
-                        }
-                    }
-                });
-            }
-        });
-        Spn.focusedProperty().addListener((obs, wasF, isF) -> {
-            if (wasF) {
-                if (Spn.getEditor().getLength() == 0) {
-                    Spn.getEditor().setText("" + Min);
-                }
-                Spn.getValueFactory().setValue(Functions.getOnlyNumbers(Spn.getEditor().getText()));
-            }
+    public static void SpnFieldCtrl(Spinner<Integer> spn, Integer min, Integer max) {
+        spn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max, min));
+        NumberField(spn.getEditor(), max);
+        spn.focusedProperty().addListener((obs, wasF, isF) -> {
+            if (wasF)
+                if (spn.getEditor().getLength() == 0)
+                    spn.getEditor().setText(min.toString());
+            spn.getValueFactory().setValue(Integer.valueOf(spn.getEditor().getText()));
         });
     }
 

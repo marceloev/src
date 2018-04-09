@@ -2,7 +2,13 @@ package br.com.cinemafx.dbcontrollers;
 
 import br.com.cinemafx.methods.log.GravaLog;
 import br.com.cinemafx.views.dialogs.ModelException;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.image.Image;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -58,11 +64,18 @@ public class Conexao {
     }
 
     public int execute() throws SQLException {
-        return this.pst.executeUpdate();
+        long rsTimeInit = System.currentTimeMillis(); //Gravar o tempo gasto para executar o statement
+        int rows = this.pst.executeUpdate();
+        long rsTimeTotal = System.currentTimeMillis() - rsTimeInit;
+        GravaLog.gravaInfo(getInvocador(), "Statement Source retornado em " + rsTimeTotal + "ms, " + rows + " linha(s) afetadas");
+        return rows;
     }
 
     public void createSet() throws SQLException {
+        long rsTimeInit = System.currentTimeMillis(); //Gravar o tempo gasto para criar o resulSet
         this.rs = this.pst.executeQuery();
+        long rsTimeTotal = System.currentTimeMillis() - rsTimeInit;
+        GravaLog.gravaInfo(getInvocador(), "ResultSet Source criado em " + rsTimeTotal + "ms");
     }
 
     public void addParametro(Object... objetos) throws SQLException {
@@ -70,7 +83,7 @@ public class Conexao {
     }
 
     public void addParametro(Object objeto) throws SQLException {
-        GravaLog.gravaInfo(invocador, String.format("%dº Parâmetro(%s): %s", index, objeto.getClass(), objeto));
+        GravaLog.gravaInfo(invocador, String.format("%dº Parâmetro(%s): %s", index, objeto.getClass().getTypeName(), objeto));
         if (objeto == null) addToStatement(index, null, "java.cinemafx.NullParameter");
         else addToStatement(index, objeto, objeto.getClass().getTypeName());
         index++;
@@ -104,6 +117,16 @@ public class Conexao {
                 break;
             case "byte[]":
                 pst.setBytes(index, (byte[]) objeto);
+                break;
+            case "javafx.scene.image.Image":
+                try {
+                    BufferedImage bImage = SwingFXUtils.fromFXImage((Image) objeto, null);
+                    ByteArrayOutputStream s = new ByteArrayOutputStream();
+                    ImageIO.write(bImage, "png", s);
+                    pst.setBytes(index, s.toByteArray());
+                } catch (IOException ex) {
+                    throw new SQLException(ex);
+                }
                 break;
             case "java.util.ArrayList":
                 ArrayList<Object> arrayObj = (ArrayList<Object>) objeto;

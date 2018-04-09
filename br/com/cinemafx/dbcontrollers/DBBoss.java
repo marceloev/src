@@ -1,6 +1,9 @@
 package br.com.cinemafx.dbcontrollers;
 
 import br.com.cinemafx.methods.Functions;
+import br.com.cinemafx.models.Exibicao;
+import br.com.cinemafx.models.Filme;
+import br.com.cinemafx.models.Genero;
 import br.com.cinemafx.models.Sala;
 import br.com.cinemafx.views.dialogs.ModelDialog;
 import br.com.cinemafx.views.dialogs.ModelException;
@@ -15,11 +18,11 @@ import java.util.List;
 public class DBBoss {
 
     public static int checkIfExists(Class invocador, String nomeTabela, Pair<String, Object> filtro) throws Exception {
-        Conexao conex = new Conexao(invocador);
+        Conexao conex = new Conexao(invocador); //No Pair, a chave já tem que vir com o operador relacional Ex: Pair<>("CODSALA <>", 1)
         try {
             conex.createStatement(String.format("SELECT COUNT(1) FROM %s\n" +
                     "WHERE 1 = 1\n" +
-                    "AND %s = ?", nomeTabela, filtro.getKey()));
+                    "AND %s ?", nomeTabela, filtro.getKey()));
             conex.addParametro(filtro.getValue());
             conex.createSet();
             conex.rs.next();
@@ -38,7 +41,7 @@ public class DBBoss {
             ArrayList<Object> objFiltros = new ArrayList<>();
             for (Pair<String, Object> filtro : filtros) {
                 objFiltros.add(filtro.getValue());
-                strBuildFiltros.append(String.format("\nAND %s = ?", filtro.getKey()));
+                strBuildFiltros.append(String.format("\nAND %s ?", filtro.getKey()));
             }
             conex.createStatement(String.format("SELECT COUNT(1) FROM %s\n" +
                     "WHERE 1 = 1 %s", nomeTabela, strBuildFiltros.toString()));
@@ -54,7 +57,7 @@ public class DBBoss {
     }
 
     public static int inseriSala(Class invocador, Sala sala) throws Exception {
-        if (checkIfExists(invocador, "TSALAS", new Pair<>("REFSALA", sala.getRefSala())) > 0)
+        if (checkIfExists(invocador, "TSALAS", new Pair<>("REFSALA = ", sala.getRefSala())) > 0)
             throw new Exception("Já existe uma sala com esta referência");
         Conexao conex = new Conexao(invocador);
         try {
@@ -67,7 +70,6 @@ public class DBBoss {
             conex.rs.next();
             return conex.rs.getInt(1);
         } catch (Exception ex) { //Precisamos fazer o catch mesmo trhows por causa do desconecta.
-            //if(ex.ge)
             throw new Exception(ex);
         } finally {
             conex.desconecta();
@@ -75,6 +77,11 @@ public class DBBoss {
     }
 
     public static void alteraSala(Class invocador, Sala sala) throws Exception {
+        ArrayList<Pair<String, Object>> filtros = new ArrayList();
+        filtros.add(new Pair<>("REFSALA =", sala.getRefSala()));
+        filtros.add(new Pair<>("CODSALA <>", sala.getCodSala()));
+        if (checkIfExists(invocador, "TSALAS", filtros) > 0)
+            throw new Exception("Já existe uma sala com esta referência");
         Conexao conex = new Conexao(invocador);
         try {
             conex.createStatement("UPDATE TSALAS\n" +
@@ -95,6 +102,131 @@ public class DBBoss {
         try {
             conex.createStatement(String.format("DELETE FROM TSALAS WHERE CODSALA IN (%s)", Functions.paramBuilder(salas)));
             conex.addParametro(salas);
+            conex.execute();
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static int inseriExibicao(Class invocador, Exibicao exibicao) throws Exception {
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement("INSERT INTO TEXIBS (NOMEEXIB, VLREXIB)\n" +
+                    "VALUES (?, ?)");
+            conex.addParametro(exibicao.getNomeExibicao(), exibicao.getVlrExibicao());
+            conex.execute();
+            conex.createStatement("SELECT LAST_INSERT_ID()");
+            conex.createSet();
+            conex.rs.next();
+            return conex.rs.getInt(1);
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static void alteraExibicao(Class invocador, Exibicao exibicao) throws Exception {
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement("UPDATE TEXIBS\n" +
+                    "SET NOMEEXIB = ?,\n" +
+                    "VLREXIB = ?\n" +
+                    "WHERE CODEXIB = ?");
+            conex.addParametro(exibicao.getNomeExibicao(), exibicao.getVlrExibicao(), exibicao.getCodExibicao());
+            conex.execute();
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static void excluiExibicao(Class invocador, ArrayList<Integer> exibicoes) throws Exception {
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement(String.format("DELETE FROM TEXIBS WHERE CODEXIB IN (%s)", Functions.paramBuilder(exibicoes)));
+            conex.addParametro(exibicoes);
+            conex.execute();
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static Genero inseriGenero(Class invocador, Genero genero) throws Exception {
+        if (checkIfExists(invocador, "TGENEROS", new Pair<>("NOMEGENERO = ", genero.getNomeGenero())) > 0) {
+            throw new Exception("Já existe um gênero com este nome");
+        }
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement("INSERT INTO TGENEROS (NOMEGENERO)\n" +
+                    "VALUES (?)");
+            conex.addParametro(genero.getNomeGenero());
+            conex.execute();
+            conex.createStatement("SELECT LAST_INSERT_ID()");
+            conex.createSet();
+            conex.rs.next();
+            return new Genero(conex.rs.getInt(1), genero.getNomeGenero());
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static int inseriFilme(Class invocador, Filme filme) throws Exception {
+        if (filme.getGenero().getCodGenero() == -1)
+            filme.setGenero(inseriGenero(invocador, filme.getGenero()));
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement("INSERT INTO TFILMES (NOMEFILME, CUSTOFILME, MINFILME, CODGENERO, SINOPSE, IMAGEM)\n" +
+                    "VALUES (?, ?, ?, ?, ?, ?)");
+            conex.addParametro(filme.getNomeFilme(), filme.getCustoFilme(), filme.getMinFilme(),
+                    filme.getGenero().getCodGenero(), filme.getSinopse(), filme.getCartazFilme());
+            conex.execute();
+            conex.createStatement("SELECT LAST_INSERT_ID()");
+            conex.createSet();
+            conex.rs.next();
+            return conex.rs.getInt(1);
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static void alteraFilme(Class invocador, Filme filme) throws Exception {
+        if (filme.getGenero().getCodGenero() == -1)
+            filme.setGenero(inseriGenero(invocador, filme.getGenero()));
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement("UPDATE TFILMES\n" +
+                    "SET NOMEFILME = ?,\n" +
+                    "CUSTOFILME = ?,\n" +
+                    "MINFILME = ?,\n" +
+                    "CODGENERO = ?,\n" +
+                    "SINOPSE = ?,\n" +
+                    "IMAGEM = ?\n" +
+                    "WHERE CODFILME = ?");
+            conex.addParametro(filme.getNomeFilme(), filme.getCustoFilme(), filme.getMinFilme(),
+                    filme.getGenero().getCodGenero(), filme.getSinopse(), filme.getCartazFilme(), filme.getCodFilme());
+            conex.execute();
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static void excluiFilme(Class invocador, ArrayList<Integer> filmes) throws Exception {
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement(String.format("DELETE FROM TFILMES WHERE CODFILME IN (%s)", Functions.paramBuilder(filmes)));
+            conex.addParametro(filmes);
             conex.execute();
         } catch (Exception ex) {
             throw new Exception(ex);

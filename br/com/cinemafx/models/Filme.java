@@ -1,5 +1,7 @@
 package br.com.cinemafx.models;
 
+import br.com.cinemafx.dbcontrollers.DBObjects;
+import br.com.cinemafx.methods.Functions;
 import javafx.scene.image.Image;
 
 public class Filme {
@@ -11,6 +13,16 @@ public class Filme {
     private Genero genero;
     private int minFilme;
     private Image cartazFilme;
+
+    public Filme() {
+        this.codFilme = 0;
+        this.nomeFilme = "";
+        this.sinopse = "";
+        this.custoFilme = 0.0;
+        this.genero = DBObjects.reloadGeneros().get(0); //Sem Gênero
+        this.minFilme = 0;
+        this.cartazFilme = Functions.noImageFilme;
+    }
 
     public Filme(int codFilme, String nomeFilme, String sinopse, Double custoFilme, Genero genero, int minFilme, Image cartazFilme) {
         this.codFilme = codFilme;

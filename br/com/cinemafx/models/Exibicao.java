@@ -6,6 +6,12 @@ public class Exibicao {
     private String nomeExibicao;
     private Double vlrExibicao;
 
+    public Exibicao() {
+        this.codExibicao = 0;
+        this.nomeExibicao = "";
+        this.vlrExibicao = 0.0;
+    }
+
     public Exibicao(int codExibicao, String nomeExibicao, Double vlrExibicao) {
         this.codExibicao = codExibicao;
         this.nomeExibicao = nomeExibicao;

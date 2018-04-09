@@ -12,10 +12,7 @@ public class Genero {
 
     @Override
     public String toString() {
-        return "Genero{" +
-                "codGenero=" + codGenero +
-                ", nomeGenero='" + nomeGenero + '\'' +
-                '}';
+        return getNomeGenero();
     }
 
     public int getCodGenero() {

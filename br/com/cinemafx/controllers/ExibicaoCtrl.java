@@ -2,6 +2,7 @@ package br.com.cinemafx.controllers;
 
 import br.com.cinemafx.dbcontrollers.DBBoss;
 import br.com.cinemafx.dbcontrollers.DBObjects;
+import br.com.cinemafx.methods.Functions;
 import br.com.cinemafx.methods.MaskField;
 import br.com.cinemafx.models.*;
 import br.com.cinemafx.views.dialogs.FormattedDialog;
@@ -21,24 +22,22 @@ import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
-public class SalaCtrl implements Initializable, CadCtrlIntface {
+public class ExibicaoCtrl implements Initializable, CadCtrlIntface {
 
-    ObservableList<Sala> salaObservableList = FXCollections.observableArrayList();
-    private Sala cachedSala = new Sala();
+    ObservableList<Exibicao> exibicaoObservableList = FXCollections.observableArrayList();
+    private Exibicao cachedExibicao = new Exibicao();
 
     @FXML
     private AnchorPane paneGrade, paneForm;
     @FXML
-    private TableView<Sala> tbvSalas;
+    private TableView<Exibicao> tbvExibicoes;
     @FXML
     private Button btnView, btnAtualizar, btnAdicionar, btnSalvar, btnCancelar,
             btnEditar, btnDuplicar, btnExcluir, btnPrimeiro, btnAnterior, btnProximo, btnUltimo;
     @FXML
     private Label lblMensagem;
     @FXML
-    private TextField txfCodigo, txfReferencia;
-    @FXML
-    private Spinner<Integer> spnCapacidade;
+    private TextField txfCodigo, txfNome, txfValor;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -47,11 +46,10 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         init();
     }
 
-
     @Override
     public void estrutura() {
-        tbvSalas.getColumns().addAll(getTableColumns());
-        tbvSalas.setItems(salaObservableList);
+        tbvExibicoes.getColumns().addAll(getTableColumns());
+        tbvExibicoes.setItems(exibicaoObservableList);
     }
 
     @Override
@@ -68,9 +66,9 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                 btnView.getTooltip().setText("Modo Grade");
             }
         });
-        tbvSalas.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        tbvSalas.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> showInForm(newV));
-        tbvSalas.setOnMouseClicked(e -> {
+        tbvExibicoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        tbvExibicoes.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showInForm(newItem));
+        tbvExibicoes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
         });
         btnView.setOnAction(e -> ctrlAction(FrameAction.ChangeView));
@@ -86,30 +84,30 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         btnProximo.setOnAction(e -> ctrlAction(FrameAction.Proximo));
         btnUltimo.setOnAction(e -> ctrlAction(FrameAction.Ultimo));
         MaskField.NumberField(txfCodigo, 11);
-        MaskField.MaxCharField(txfReferencia, 25);
-        MaskField.SpnFieldCtrl(spnCapacidade, 1, 999999);
+        MaskField.MaxCharField(txfNome, 25);
+        MaskField.MoneyField(txfValor, 11);
         propFrameStatus.addListener((obs, oldV, newV) -> {
             if (newV.intValue() == 1) btnEditar.fire(); //Alterando
         });
         txfCodigo.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV && !isAtualizando() && getFrameStatus() == FrameStatus.Status.Visualizando) { //FocusLost to Search
-                tbvSalas.getSelectionModel().clearSelection();
+                tbvExibicoes.getSelectionModel().clearSelection();
                 if (txfCodigo.getText().isEmpty()) {
                     sendMensagem(lblMensagem, false, "Informe algum código válido para pesquisar");
-                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                    tbvExibicoes.getSelectionModel().clearAndSelect(0);
                     return;
                 }
-                long exists = salaObservableList.stream()
-                        .filter(sala -> sala.getCodSala() == Integer.valueOf(txfCodigo.getText()))
+                long exists = exibicaoObservableList.stream()
+                        .filter(exib -> exib.getCodExibicao() == Integer.valueOf(txfCodigo.getText()))
                         .count();
                 if (exists > 0)
-                    tbvSalas.getSelectionModel().select(
-                            salaObservableList.stream()
-                                    .filter(sala -> sala.getCodSala() == Integer.valueOf(txfCodigo.getText())).findFirst().get());
+                    tbvExibicoes.getSelectionModel().select(
+                            exibicaoObservableList.stream()
+                                    .filter(exib -> exib.getCodExibicao() == Integer.valueOf(txfCodigo.getText())).findFirst().get());
                 else {
                     new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
-                            String.format("Sala não encontrada para o código: %s", txfCodigo.getText())).getAlert().showAndWait();
-                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                            String.format("Exibição não encontrada para o código: %s", txfCodigo.getText())).getAlert().showAndWait();
+                    tbvExibicoes.getSelectionModel().clearAndSelect(0);
                 }
             }
         });
@@ -120,33 +118,34 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                             "Essa trava tem a funcionalidade de evitar duplicidade.").getAlert().showAndWait();
             Platform.runLater(() -> txfCodigo.clear());
         });
-        txfReferencia.textProperty().addListener((obs, oldV, newV) -> {
+        txfNome.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getCachedSala().setRefSala(newV));
+            notifyEdit(() -> getCachedExibicao().setNomeExibicao(newV));
         });
-        spnCapacidade.getValueFactory().valueProperty().addListener((obs, oldV, newV) -> {
+        txfValor.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getCachedSala().setCapacidade(newV));
+            notifyEdit(() -> getCachedExibicao().setVlrExibicao(Functions.getDoubleFrom(newV))); //Mais zero pra evitar Null
         });
     }
 
     @Override
     public void init() {
         loadTableValues();
-        tbvSalas.getSelectionModel().select(0);
+        tbvExibicoes.getSelectionModel().clearAndSelect(0);
     }
 
     @Override
     public void loadTableValues() {
         try {
-            salaObservableList.clear();
-            salaObservableList.addAll(DBObjects.reloadSala().stream().filter(sala -> sala.getCodSala() != 0).collect(Collectors.toList()));
-            sendMensagem(lblMensagem, true, "Tabela de Salas atualizada com sucesso!");
+            exibicaoObservableList.clear();
+            exibicaoObservableList.addAll(DBObjects.reloadExibicoes().stream()
+                    .filter(exib -> exib.getCodExibicao() != 0).collect(Collectors.toList()));
+            sendMensagem(lblMensagem, true, "Tabela de Exibições atualizada com sucesso!");
         } catch (Exception ex) {
             new ModelException(this.getClass(),
-                    String.format("Erro ao tentar atualizar tabela de salas\n%s", ex.getMessage()), ex)
+                    String.format("Erro ao tentar atualizar tabela de exibições\n%s", ex.getMessage()), ex)
                     .getAlert().showAndWait();
-            salaObservableList.clear();
+            exibicaoObservableList.clear();
         }
     }
 
@@ -154,13 +153,13 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
     public TableColumn[] getTableColumns() {
         //Constrained sized table
         TableColumn[] tableColumns = new TableColumn[3];
-        tableColumns[0] = new ModelTableColumn<Sala, Integer>("#", "codSala", TableColumnType.Inteiro);
-        tableColumns[1] = new ModelTableColumn<Sala, String>("Referência", "refSala", TableColumnType.Texto_Pequeno);
-        tableColumns[2] = new ModelTableColumn<Sala, Integer>("Capacidade", "capacidade", TableColumnType.Inteiro);
+        tableColumns[0] = new ModelTableColumn<Exibicao, Integer>("#", "codExibicao", TableColumnType.Inteiro);
+        tableColumns[1] = new ModelTableColumn<Exibicao, String>("Nome Exibição", "nomeExibicao", TableColumnType.Texto_Pequeno);
+        tableColumns[2] = new ModelTableColumn<Exibicao, Double>("Valor (R$)", "vlrExibicao", TableColumnType.Double);
         return tableColumns;
     }
 
-    private void showInForm(Sala sala) {
+    private void showInForm(Exibicao exibicao) {
         if (getFrameStatus() != FrameStatus.Status.Visualizando) {
             int choice = FormattedDialog.getYesNoDialog(this.getClass(),
                     "Foram detectadas alterações não salvas\nDeseja salvar estas alterações antes de sair do registro?",
@@ -170,13 +169,13 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
             if (getFrameStatus() != FrameStatus.Status.Visualizando) //Deu erro na tentativa de salvar
                 return;
         }
-        if (sala == null) return;
+        if (exibicao == null) return;
         setAtualizando(true);
-        setCachedSala(sala);
-        txfCodigo.setText(String.valueOf(getCachedSala().getCodSala()));
-        txfReferencia.setText(getCachedSala().getRefSala());
-        spnCapacidade.getValueFactory().setValue(getCachedSala().getCapacidade());
-        ctrlLinhasTab(tbvSalas.getItems().indexOf(sala), true);
+        setCachedExibicao(exibicao);
+        txfCodigo.setText(String.valueOf(getCachedExibicao().getCodExibicao()));
+        txfNome.setText(getCachedExibicao().getNomeExibicao());
+        txfValor.setText(getCachedExibicao().getVlrExibicao().toString());
+        ctrlLinhasTab(tbvExibicoes.getItems().indexOf(exibicao), true);
         setAtualizando(false);
     }
 
@@ -191,47 +190,47 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                 disableButtons(false);
                 loadTableValues();
                 try {
-                    tbvSalas.getSelectionModel().select(tbvSalas.getItems().stream()
-                            .filter(sala -> sala.getCodSala() == getCachedSala().getCodSala())
+                    tbvExibicoes.getSelectionModel().select(tbvExibicoes.getItems().stream()
+                            .filter(exib -> exib.getCodExibicao() == getCachedExibicao().getCodExibicao())
                             .findFirst().get());
                 } catch (NoSuchElementException ex) {
                     sendMensagem(lblMensagem, false, "Registro pré-selecionado não existe mais");
-                    tbvSalas.getSelectionModel().clearAndSelect(0);
+                    tbvExibicoes.getSelectionModel().clearAndSelect(0);
                 }
                 break;
             case Adicionar:
                 paneForm.setVisible(true);
                 setFrameStatus(FrameStatus.Status.Adicionando);
                 txfCodigo.clear(); //Não precisa colocar runEdits pois, o FrameStatus = Adicionando não ativa o EditMode
-                txfReferencia.clear();
-                spnCapacidade.getValueFactory().setValue(1);
+                txfNome.clear();
+                txfValor.clear();
                 disableButtons(true);
                 break;
             case Salvar:
                 if (getFrameStatus() == FrameStatus.Status.Adicionando) {
                     try {
-                        int idInserted = DBBoss.inseriSala(this.getClass(), getCachedSala());
-                        getCachedSala().setCodSala(idInserted);
+                        int idInserted = DBBoss.inseriExibicao(this.getClass(), getCachedExibicao());
+                        getCachedExibicao().setCodExibicao(idInserted);
                         disableButtons(false);
                         setFrameStatus(FrameStatus.Status.Visualizando);
                         ctrlAction(FrameAction.Atualizar);
-                        sendMensagem(lblMensagem, true, String.format("Sala %d - %s cadastrada com sucesso",
-                                getCachedSala().getCodSala(), getCachedSala().getRefSala()));
+                        sendMensagem(lblMensagem, true, String.format("Exibição %d - %s cadastrada com sucesso",
+                                getCachedExibicao().getCodExibicao(), getCachedExibicao().getNomeExibicao()));
                     } catch (Exception ex) {
                         new ModelException(this.getClass(),
-                                String.format("Erro ao tentar cadastrar nova sala\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                                String.format("Erro ao tentar cadastrar nova exibição\n%s", ex.getMessage()), ex).getAlert().showAndWait();
                     }
                 } else if (getFrameStatus() == FrameStatus.Status.Alterando) {
                     try {
-                        DBBoss.alteraSala(this.getClass(), getCachedSala());
+                        DBBoss.alteraExibicao(this.getClass(), getCachedExibicao());
                         disableButtons(false);
                         setFrameStatus(FrameStatus.Status.Visualizando);
                         ctrlAction(FrameAction.Atualizar);
-                        sendMensagem(lblMensagem, true, String.format("Sala %d - %s alterada com sucesso",
-                                getCachedSala().getCodSala(), getCachedSala().getRefSala()));
+                        sendMensagem(lblMensagem, true, String.format("Exibição %d - %s alterada com sucesso",
+                                getCachedExibicao().getCodExibicao(), getCachedExibicao().getNomeExibicao()));
                     } catch (Exception ex) {
                         new ModelException(this.getClass(),
-                                String.format("Erro ao tentar alterar sala\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                                String.format("Erro ao tentar alterar exibição\n%s", ex.getMessage()), ex).getAlert().showAndWait();
                     }
                 }
                 break;
@@ -251,40 +250,40 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
                 disableButtons(true);
                 break;
             case Excluir:
-                StringBuilder salas = new StringBuilder();
-                for (Sala sala : tbvSalas.getSelectionModel().getSelectedItems()) {
-                    salas.append(String.format("\n%d - %s", sala.getCodSala(), sala.getRefSala()));
+                StringBuilder exibicoes = new StringBuilder();
+                for (Exibicao exibicao : tbvExibicoes.getSelectionModel().getSelectedItems()) {
+                    exibicoes.append(String.format("\n%d - %s", exibicao.getCodExibicao(), exibicao.getNomeExibicao()));
                 }
                 int resp = FormattedDialog.getYesNoDialog(this.getClass(),
-                        "Deseja realmente excluir a(s) sala(s) selecionada(s)?" + salas.toString(),
+                        "Deseja realmente excluir a(s) exibiçõe(s) selecionada(s)?" + exibicoes.toString(),
                         new String[]{"Confirmar", "Cancelar"});
                 if (resp == 0)
                     try {
-                        ArrayList<Integer> codSalas = new ArrayList<>();
-                        tbvSalas.getSelectionModel().getSelectedItems().forEach(sala -> codSalas.add(sala.getCodSala()));
-                        DBBoss.excluiSala(this.getClass(), codSalas);
+                        ArrayList<Integer> codExibicoes = new ArrayList<>();
+                        tbvExibicoes.getSelectionModel().getSelectedItems().forEach(exibicao -> codExibicoes.add(exibicao.getCodExibicao()));
+                        DBBoss.excluiExibicao(this.getClass(), codExibicoes);
                         ctrlAction(FrameAction.Atualizar);
-                        sendMensagem(lblMensagem, true, "Sala(s) excluída(s) com sucesso");
+                        sendMensagem(lblMensagem, true, "Exibiçõe(s) excluída(s) com sucesso");
                     } catch (Exception ex) {
                         new ModelException(this.getClass(),
-                                String.format("Erro ao tentar excluir sala(s)\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                                String.format("Erro ao tentar excluir exibições(s)\n%s", ex.getMessage()), ex).getAlert().showAndWait();
                     }
                 break;
             case Primeiro:
                 ctrlLinhasTab(0, false);
                 break;
             case Anterior:
-                int selectedIndexA = tbvSalas.getSelectionModel().getSelectedIndex();
+                int selectedIndexA = tbvExibicoes.getSelectionModel().getSelectedIndex();
                 if (selectedIndexA == -1) ctrlLinhasTab(0, false);
                 else ctrlLinhasTab(selectedIndexA - 1, false);
                 break;
             case Proximo:
-                int selectedIndexB = tbvSalas.getSelectionModel().getSelectedIndex();
+                int selectedIndexB = tbvExibicoes.getSelectionModel().getSelectedIndex();
                 if (selectedIndexB == -1) ctrlLinhasTab(0, false);
                 else ctrlLinhasTab(selectedIndexB + 1, false);
                 break;
             case Ultimo:
-                ctrlLinhasTab(tbvSalas.getItems().size() - 1, false);
+                ctrlLinhasTab(tbvExibicoes.getItems().size() - 1, false);
                 break;
         }
     }
@@ -314,27 +313,28 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         btnAnterior.setDisable(true);
         btnProximo.setDisable(true);
         btnUltimo.setDisable(true);
-        if (tbvSalas.getItems().size() == 1) return;
-        if (!alreadySelected) tbvSalas.getSelectionModel().clearAndSelect(newIndex);
+        if (tbvExibicoes.getItems().size() == 1) return;
+        if (!alreadySelected) tbvExibicoes.getSelectionModel().clearAndSelect(newIndex);
         if (newIndex == 0) {
             btnProximo.setDisable(false);
             btnUltimo.setDisable(false);
-        } else if (newIndex < tbvSalas.getItems().size() - 1) {
+        } else if (newIndex < tbvExibicoes.getItems().size() - 1) {
             btnPrimeiro.setDisable(false);
             btnAnterior.setDisable(false);
             btnProximo.setDisable(false);
             btnUltimo.setDisable(false);
-        } else if (newIndex == tbvSalas.getItems().size() - 1) {
+        } else if (newIndex == tbvExibicoes.getItems().size() - 1) {
             btnPrimeiro.setDisable(false);
             btnAnterior.setDisable(false);
         }
     }
 
-    public Sala getCachedSala() {
-        return cachedSala;
+    public Exibicao getCachedExibicao() {
+        return cachedExibicao;
     }
 
-    public void setCachedSala(Sala cachedSala) {
-        this.cachedSala = cachedSala;
+    public void setCachedExibicao(Exibicao cachedExibicao) {
+        this.cachedExibicao = cachedExibicao;
     }
+
 }

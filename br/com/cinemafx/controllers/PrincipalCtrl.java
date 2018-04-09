@@ -31,7 +31,13 @@ public class PrincipalCtrl implements Initializable {
          * */
         String telaLoad = null;
         try {
-            telaLoad = "Sala";
+            telaLoad = "Filmes";
+            Parent rootFilmes = FXMLLoader.load(getClass().getResource("/br/com/cinemafx/views/fxml/Filme.fxml"));
+            mainTabPane.getTabs().get(2).setContent(rootFilmes);
+            telaLoad = "Exibições";
+            Parent rootExibicoes = FXMLLoader.load(getClass().getResource("/br/com/cinemafx/views/fxml/Exibicao.fxml"));
+            mainTabPane.getTabs().get(3).setContent(rootExibicoes);
+            telaLoad = "Salas";
             Parent rootSalas = FXMLLoader.load(getClass().getResource("/br/com/cinemafx/views/fxml/Sala.fxml"));
             mainTabPane.getTabs().get(4).setContent(rootSalas);
         } catch (IOException ex) {

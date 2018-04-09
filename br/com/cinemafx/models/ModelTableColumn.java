@@ -1,13 +1,19 @@
 package br.com.cinemafx.models;
 
-import javafx.scene.control.TableColumn;
+import com.jfoenix.controls.JFXTextArea;
+import javafx.application.Platform;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.ImageViewBuilder;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 
 public class ModelTableColumn<S, T> extends TableColumn {
 
+    final Clipboard clipboard = Clipboard.getSystemClipboard();
+    final ClipboardContent content = new ClipboardContent();
     private final ImageView imgFilterEmpty = ImageViewBuilder.create()
             .image(new Image("/br/com/cinemafx/views/images/Icone_Filtro_Vazio.png"))
             .style("-fx-alignment: RIGHT")
@@ -21,27 +27,74 @@ public class ModelTableColumn<S, T> extends TableColumn {
         this.setText(titulo);
         this.setStyle("-fx-alignment: CENTER");
         if (key != null) createCellValueFactory(key);
-        if (tipo != null) createCellFactory(tipo);
+        if (tipo != null) setCustomCellFactory(tipo);
     }
 
     private void createCellValueFactory(String key) {
         this.setCellValueFactory(new PropertyValueFactory<>(key));
     }
 
-    private void createCellFactory(TableColumnType tipo) {
+    private void setCustomCellFactory(TableColumnType tipo) {
         switch (tipo) {
             case Lógico:
                 System.err.println("ModelTableColumn Lógico not programmed");
                 break;
             case Opcoes:
-                //this.setCellFactory(col -> );
                 break;
             case Inteiro:
                 break;
             case Texto_Grande:
+                Platform.runLater(() -> this.getTableView().setFixedCellSize(100));
+                this.setCellFactory(param -> {
+                    JFXTextArea text = new JFXTextArea();
+                    text.setEditable(false);
+                    text.prefWidthProperty().bind(this.widthProperty());
+                    text.setPrefHeight(100);
+                    TableCell<S, String> cell = new TableCell<S, String>() {
+                        public void updateItem(String item, boolean empty) {
+                            text.setText(item);
+                        }
+                    };
+                    cell.setGraphic(text);
+                    return cell;
+                });
+                break;
+            case Double:
                 break;
             case Texto_Pequeno:
                 break;
+            case Imagem:
+                Platform.runLater(() -> this.getTableView().setFixedCellSize(100));
+                this.setCellFactory(param -> {
+                    final ImageView imageview = new ImageView();
+                    imageview.fitWidthProperty().bind(this.widthProperty());
+                    imageview.setFitHeight(100);
+                    ContextMenu contextMenu = new ContextMenu();
+                    MenuItem menuItemCopyClipboard = new MenuItem("Copiar imagem");
+                    menuItemCopyClipboard.setOnAction(e -> {
+                        content.putImage(imageview.getImage());
+                        clipboard.setContent(content);
+                    });
+                    contextMenu.getItems().addAll(menuItemCopyClipboard);
+                    TableCell<S, Image> cell = new TableCell<S, Image>() {
+                        public void updateItem(Image item, boolean empty) {
+                            if (item != null) {
+                                imageview.setImage(item);
+                            } else {
+                                imageview.setImage(null);
+                            }
+                        }
+                    };
+                    cell.setGraphic(imageview);
+                    cell.setContextMenu(contextMenu);
+                    return cell;
+                });
+                break;
         }
+    }
+
+    public TableColumn setPercentSize(Double percent) {
+        Platform.runLater(() -> this.prefWidthProperty().bind(this.getTableView().widthProperty().multiply(percent).divide(100)));
+        return this;
     }
 }
