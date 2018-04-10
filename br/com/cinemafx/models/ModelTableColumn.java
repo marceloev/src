@@ -1,5 +1,6 @@
 package br.com.cinemafx.models;
 
+import br.com.cinemafx.methods.Functions;
 import com.jfoenix.controls.JFXTextArea;
 import javafx.application.Platform;
 import javafx.scene.control.*;
@@ -9,6 +10,9 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.ImageViewBuilder;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.text.Text;
+
+import java.sql.Timestamp;
 
 public class ModelTableColumn<S, T> extends TableColumn {
 
@@ -61,7 +65,32 @@ public class ModelTableColumn<S, T> extends TableColumn {
                 break;
             case Double:
                 break;
+            case Dinheiro:
+                this.setCellFactory(param -> {
+                    final Text textDh = new Text();
+                    TableCell<S, Double> cell = new TableCell<S, Double>() {
+                        public void updateItem(Double item, boolean empty) {
+                            if (item != null)
+                                textDh.setText(String.format("%,.2f", item));
+                        }
+                    };
+                    cell.setGraphic(textDh);
+                    return cell;
+                });
+                break;
             case Texto_Pequeno:
+                break;
+            case Data_Hora:
+                this.setCellFactory(param -> {
+                    final Text textDh = new Text();
+                    TableCell<S, Timestamp> cell = new TableCell<S, Timestamp>() {
+                        public void updateItem(Timestamp item, boolean empty) {
+                            textDh.setText(Functions.getDataFormatted(Functions.dataHoraFormater, item));
+                        }
+                    };
+                    cell.setGraphic(textDh);
+                    return cell;
+                });
                 break;
             case Imagem:
                 Platform.runLater(() -> this.getTableView().setFixedCellSize(100));

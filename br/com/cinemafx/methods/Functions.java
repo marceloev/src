@@ -1,15 +1,32 @@
 package br.com.cinemafx.methods;
 
+import br.com.cinemafx.views.dialogs.ModelException;
 import javafx.scene.image.Image;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 public class Functions {
 
     public static final Image noImageFilme = new Image("/br/com/cinemafx/views/images/Icon_Sem_Imagem.png");
+    public static SimpleDateFormat dataHoraFormater = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+
+    public static String getDataFormatted(SimpleDateFormat dataHoraFormater, Object value) {
+        String valor = "";
+        if (value == null || value == "")
+            return valor;
+        else {
+            try {
+                valor = dataHoraFormater.format(value);
+            } catch (Exception ex) {
+                new ModelException(Functions.class, "Erro ao tentar formatar data\n" + ex.getMessage(), ex).getAlert().showAndWait();
+            }
+        }
+        return valor;
+    }
 
     public static final String Nvl(String valor) {
         if (valor == null) return "";

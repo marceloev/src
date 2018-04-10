@@ -3,6 +3,8 @@ package br.com.cinemafx.methods;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -70,6 +72,13 @@ public class MaskField {
                     txf.clear();
                 }
         });
+    }
+
+    private static String MoneyFormat(String value) {
+        if (value == null || value.isEmpty()) return "";
+        if (value.matches("[0-9]{1,}[.]{1}[0-9]{1,}"))
+            value = value.replace(",", "");
+        return String.format("%,.2f", value);
     }
 
     public static void NCMField(TextField Txt) {

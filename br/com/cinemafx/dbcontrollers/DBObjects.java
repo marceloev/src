@@ -118,11 +118,13 @@ public class DBObjects {
 
     public static ArrayList<Sessao> reloadSessoes() {
         conex.remakeConexao();
-        filmes.clear();
+        sessoes.clear();
         try {
             reloadSala();
             reloadFilmes();
+            reloadGeneros();
             reloadExibicoes();
+            conex = new Conexao(DBObjects.class);
             conex.createStatement("SELECT CODSESSAO, CODSALA, CODFILME, CODEXIB, DATAHORA FROM TSESSOES");
             conex.createSet();
             while (conex.rs.next()) {
@@ -158,11 +160,12 @@ public class DBObjects {
     }
 
     public static ArrayList<Genero> getGeneros() {
-        if (exibicoes.isEmpty()) reloadExibicoes();
+        if (generos.isEmpty()) reloadGeneros();
         return generos;
     }
 
     public static ArrayList<Filme> getFilmes() {
+        if (generos.isEmpty()) reloadGeneros();
         if (filmes.isEmpty()) reloadFilmes();
         return filmes;
     }

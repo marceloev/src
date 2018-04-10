@@ -19,7 +19,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
-import javafx.util.Callback;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -192,7 +191,8 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
     public void loadTableValues() {
         try {
             generoObservableList.clear();
-            DBObjects.reloadGeneros().forEach(genero -> generoObservableList.add(genero.getNomeGenero()));
+            DBObjects.reloadGeneros().stream().filter(genero -> genero.getCodGenero() != 0)
+                    .forEach(genero -> generoObservableList.add(genero.getNomeGenero()));
             filmeObservableList.clear();
             filmeObservableList.addAll(DBObjects.reloadFilmes().stream()
                     .filter(filme -> filme.getCodFilme() != 0).collect(Collectors.toList()));
@@ -271,7 +271,7 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
                 txfNome.clear();
                 txfCusto.clear();
                 spnDuracao.getValueFactory().setValue(1);
-                cbbGenero.setValue(cbbGenero.getItems().get(0));
+                cbbGenero.setValue("");
                 txaSinopse.clear();
                 imgFilme.setImage(Functions.noImageFilme);
                 disableButtons(true);
@@ -413,8 +413,11 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
                             "*.jpg", "*.png", "*.jpeg");
                     fileChooser.getExtensionFilters().add(extFilter);
                     File file = fileChooser.showSaveDialog(btnDownloadImg.getScene().getWindow());
-                    ImageIO.write(SwingFXUtils.fromFXImage(imgFilme.getImage(), null), "png", file);
-                    sendMensagem(lblMensagem, true, "Download de cartaz concluído com sucesso");
+                    if (file != null) {
+                        ImageIO.write(SwingFXUtils.fromFXImage(imgFilme.getImage(), null), "png", file);
+                        sendMensagem(lblMensagem, true, "Download de cartaz concluído com sucesso");
+                    } else
+                        sendMensagem(lblMensagem, false, "Operação cancelada pelo usuário");
                 } catch (IOException ex) {
                     new ModelException(this.getClass(),
                             String.format("Erro ao tentar efetuar download de cartaz\n%s", ex.getMessage()), ex).getAlert().showAndWait();

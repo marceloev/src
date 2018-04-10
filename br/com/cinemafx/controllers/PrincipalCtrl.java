@@ -22,15 +22,11 @@ public class PrincipalCtrl implements Initializable {
     }
 
     private void estrutura() {
-        /*
-         * 0 - Ingressos
-         * 1 - Sessões
-         * 2 - Filmes
-         * 3 - Exibições
-         * 4 - Salas
-         * */
         String telaLoad = null;
         try {
+            telaLoad = "Sessões";
+            Parent rootSessoes = FXMLLoader.load(getClass().getResource("/br/com/cinemafx/views/fxml/Sessao.fxml"));
+            mainTabPane.getTabs().get(1).setContent(rootSessoes);
             telaLoad = "Filmes";
             Parent rootFilmes = FXMLLoader.load(getClass().getResource("/br/com/cinemafx/views/fxml/Filme.fxml"));
             mainTabPane.getTabs().get(2).setContent(rootFilmes);
