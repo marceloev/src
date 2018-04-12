@@ -2,6 +2,7 @@ package br.com.cinemafx.controllers;
 
 import br.com.cinemafx.dbcontrollers.Conexao;
 import br.com.cinemafx.dbcontrollers.DBObjects;
+import br.com.cinemafx.methods.Functions;
 import br.com.cinemafx.methods.MaskField;
 import br.com.cinemafx.methods.SearchFieldTable;
 import br.com.cinemafx.models.*;
@@ -32,16 +33,17 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
 
     private ImageView imgView = ImageViewBuilder.create().image(imgGrade).fitHeight(31).fitWidth(35).build();
     private ObservableList<Sessao> sessaoObservableList = FXCollections.observableArrayList();
+    private ObservableList<Sessao> preSessaoObservableList = FXCollections.observableArrayList();
     private Sessao cachedSessao;
     private Conexao conex = new Conexao(this.getClass());
-    /*Adicionar no FXML Filme-Cod, Nome e Img*/
+
     @FXML
     private AnchorPane paneGrade, paneForm;
     @FXML
     private TableView<Sessao> tbvSessoes, tbvLoteSessoes;
     @FXML
-    private Button btnView, btnAtualizar, btnAdicionar, btnSalvar, btnCancelar,
-            btnEditar, btnDuplicar, btnExcluir, btnPrimeiro, btnAnterior, btnProximo, btnUltimo;
+    private Button btnView, btnAtualizar, btnAdicionar, btnSalvar, btnCancelar, btnEditar, btnDuplicar, btnExcluir,
+            btnPrimeiro, btnAnterior, btnProximo, btnUltimo, btnCadSessao, btnExcSessao;
     @FXML
     private Label lblMensagem;
     @FXML
@@ -64,7 +66,9 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
     @Override
     public void estrutura() {
         tbvSessoes.getColumns().addAll(getTableColumns());
+        tbvLoteSessoes.getColumns().addAll(getTableColumns());
         tbvSessoes.setItems(sessaoObservableList);
+        tbvLoteSessoes.setItems(preSessaoObservableList);
     }
 
     @Override
@@ -85,6 +89,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
             }
         });
         tbvSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        tbvLoteSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvSessoes.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showInForm(newItem));
         tbvSessoes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
@@ -102,6 +107,8 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         btnAnterior.setOnAction(e -> ctrlAction(FrameAction.Anterior));
         btnProximo.setOnAction(e -> ctrlAction(FrameAction.Proximo));
         btnUltimo.setOnAction(e -> ctrlAction(FrameAction.Ultimo));
+        btnCadSessao.setOnAction(e -> ctrlSessao(FrameAction.Adicionar));
+        btnExcSessao.setOnAction(e -> ctrlSessao(FrameAction.Excluir));
         MaskField.NumberField(txfCodSalaGrade, 11);
         propFrameStatus.addListener((obs, oldV, newV) -> {
             if (newV.intValue() == 1) btnEditar.fire(); //Alterando
@@ -182,23 +189,6 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 loadTableValues();
             }
         });
-        /*txfCodExib.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (oldV)
-                loadTableValues();
-            if (oldV && Nvl(txfCodExib.getText()).isEmpty())
-                txfNomeExib.clear();
-            else if (oldV && !Nvl(txfCodExib.getText()).isEmpty()) {
-                if (DBObjects.salaContains(Integer.valueOf(txfCodSala.getText())))
-                    txfNomeSala.setText(DBObjects.getSalaByCod(this.getClass(),
-                            Integer.valueOf(txfCodSala.getText())).getRefSala());
-                else {
-                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
-                            String.format("Sala não encontrada para código %s", txfCodSala.getText())).getAlert().showAndWait();
-                    txfCodSala.clear();
-                    txfNomeSala.clear();
-                }
-            }
-        });*/
     }
 
     @Override
@@ -307,6 +297,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         return tableColumns;
     }
 
+
     private void showInForm(Sessao sessao) {
         if (getFrameStatus() != FrameStatus.Status.Visualizando) {
             int choice = FormattedDialog.getYesNoDialog(this.getClass(),
@@ -367,6 +358,34 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 break;
             case Ultimo:
                 ctrlLinhasTab(tbvSessoes.getItems().size() - 1, false);
+                break;
+        }
+    }
+
+    private void ctrlSessao(FrameAction action) {
+        switch (action) {
+            case Adicionar:
+                Sessao preCad = getCachedSessao();
+                preCad.setCodSessao(0);
+                preSessaoObservableList.add(preCad);
+                break;
+            case Excluir:
+                StringBuilder filmes = new StringBuilder();
+                for (Sessao sessao : tbvLoteSessoes.getSelectionModel().getSelectedItems()) {
+                    filmes.append(String.format("\n%s - %s ás %s", sessao.getFilme().getNomeFilme(), sessao.getExibicao().getNomeExibicao(),
+                            Functions.getDataFormatted(Functions.dataHoraFormater, sessao.getDataHoraExib())));
+                }
+                int resp = FormattedDialog.getYesNoDialog(this.getClass(),
+                        "Deseja realmente excluir a(s) sessões(s) pré-cadastra(s)?" + filmes.toString(),
+                        new String[]{"Confirmar", "Cancelar"});
+                if (resp == 0)
+                    try {
+                        tbvLoteSessoes.getItems().removeAll(tbvLoteSessoes.getSelectionModel().getSelectedItems());
+                        sendMensagem(lblMensagem, true, "Pré-Cadastro(s) excluída(s) com sucesso");
+                    } catch (Exception ex) {
+                        new ModelException(this.getClass(),
+                                String.format("Erro ao tentar excluir pré-cadastro(s)\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                    }
                 break;
         }
     }

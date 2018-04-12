@@ -386,7 +386,30 @@
                   </HBox>
                </children>
             </VBox>
-            <VBox alignment="CENTER_LEFT" layoutX="3.0" layoutY="111.0" prefHeight="46.0" prefWidth="423.0">
+            <VBox layoutX="433.0" prefHeight="50.0" prefWidth="423.0" spacing="6.0">
+               <children>
+                  <Label prefHeight="17.0" prefWidth="41.0" text="Filme:">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <HBox spacing="5.0" VBox.vgrow="ALWAYS">
+                     <children>
+                        <TextField fx:id="txfCodFilme" alignment="CENTER" prefHeight="25.0" prefWidth="65.0" />
+                        <ImageView fx:id="imgBuscaFilme" fitHeight="25.0" fitWidth="26.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@../images/Icone_Pesquisa.png" />
+                           </image>
+                           <cursor>
+                              <Cursor fx:constant="HAND" />
+                           </cursor>
+                        </ImageView>
+                        <TextField fx:id="txfNomeFilme" alignment="CENTER" prefHeight="25.0" prefWidth="229.0" HBox.hgrow="ALWAYS" />
+                     </children>
+                  </HBox>
+               </children>
+            </VBox>
+            <VBox alignment="CENTER_LEFT" layoutX="433.0" layoutY="57.0" prefHeight="46.0" prefWidth="423.0">
                <children>
                   <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Horário:" underline="true">
                      <font>
@@ -402,12 +425,12 @@
                   </HBox>
                </children>
             </VBox>
-            <VBox alignment="CENTER" layoutX="3.0" layoutY="165.0" spacing="1.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="165.0">
+            <VBox alignment="CENTER" layoutX="3.0" layoutY="111.0" prefHeight="436.0" prefWidth="865.0" spacing="1.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="111.0">
                <children>
                   <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Cadastro de Sessões em Lote" underline="true" />
                   <HBox spacing="3.0" VBox.vgrow="ALWAYS">
                      <children>
-                        <TableView prefHeight="365.0" prefWidth="801.0" HBox.hgrow="ALWAYS" />
+                        <TableView fx:id="tbvLoteSessoes" prefHeight="365.0" prefWidth="801.0" HBox.hgrow="ALWAYS" />
                         <VBox prefHeight="365.0" prefWidth="38.0" spacing="5.0">
                            <children>
                               <Label style="-fx-background-color: LightGray;" text="Ações" underline="true">
@@ -415,7 +438,7 @@
                                     <Font size="13.0" />
                                  </font>
                               </Label>
-                              <Button contentDisplay="GRAPHIC_ONLY" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="Button">
+                              <Button fx:id="btnCadSessao" contentDisplay="GRAPHIC_ONLY" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" text="Button">
                                  <graphic>
                                     <ImageView fitHeight="25.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                        <image>
@@ -423,7 +446,7 @@
                                        </image>
                                     </ImageView>
                                  </graphic></Button>
-                              <Button contentDisplay="GRAPHIC_ONLY" layoutX="10.0" layoutY="34.0" mnemonicParsing="false" text="Button">
+                              <Button fx:id="btnExcSessao" contentDisplay="GRAPHIC_ONLY" layoutX="10.0" layoutY="34.0" mnemonicParsing="false" text="Button">
                                  <graphic>
                                     <ImageView fitHeight="25.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
                                        <image>
