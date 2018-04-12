@@ -110,6 +110,9 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         btnCadSessao.setOnAction(e -> ctrlSessao(FrameAction.Adicionar));
         btnExcSessao.setOnAction(e -> ctrlSessao(FrameAction.Excluir));
         MaskField.NumberField(txfCodSalaGrade, 11);
+        MaskField.NumberField(txfCodSala, 11);
+        MaskField.NumberField(txfCodExib, 11);
+        MaskField.NumberField(txfCodFilme, 11);
         propFrameStatus.addListener((obs, oldV, newV) -> {
             if (newV.intValue() == 1) btnEditar.fire(); //Alterando
         });
@@ -180,12 +183,66 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 }
             }
         });
-        SearchFieldTable searchSala = new SearchFieldTable(imgBuscaSalaGrade, "Salas",
+        SearchFieldTable searchSala = new SearchFieldTable(imgBuscaSala, "Salas",
                 new String[]{"Código", "Referência", "Capacidade"}, "SELECT CODSALA, REFSALA, CAPACIDADE FROM TSALAS ORDER BY 1");
         searchSala.getStage().setOnCloseRequest(e -> {
             if (searchSala.getKeyReturn() != null) {
                 txfCodSala.setText(searchSala.getKeyReturn().get(0));
                 txfNomeFilme.setText(searchSala.getKeyReturn().get(1));
+                loadTableValues();
+            }
+        });
+        txfCodExib.focusedProperty().addListener((obs, oldV, newV) -> {
+            if (oldV)
+                loadTableValues();
+            if (oldV && Nvl(txfCodExib.getText()).isEmpty())
+                txfNomeExib.clear();
+            else if (oldV && !Nvl(txfCodExib.getText()).isEmpty()) {
+                if (DBObjects.exibContains(Integer.valueOf(txfCodExib.getText())))
+                    txfNomeExib.setText(DBObjects.getExibicaoByCod(this.getClass(),
+                            Integer.valueOf(txfCodExib.getText())).getNomeExibicao());
+                else {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            String.format("Exibição não encontrada para código %s", txfCodExib.getText())).getAlert().showAndWait();
+                    txfCodExib.clear();
+                    txfNomeExib.clear();
+                }
+            }
+        });
+        SearchFieldTable searchExib = new SearchFieldTable(imgBuscaExib, "Exibições",
+                new String[]{"Código", "Nome", "Valor"}, "SELECT CODEXIB, NOMEEXIB, VLREXIB FROM TEXIBS ORDER BY 1");
+        searchExib.getStage().setOnCloseRequest(e -> {
+            if (searchExib.getKeyReturn() != null) {
+                txfCodExib.setText(searchExib.getKeyReturn().get(0));
+                txfNomeExib.setText(searchExib.getKeyReturn().get(1));
+                loadTableValues();
+            }
+        });
+        txfCodFilme.focusedProperty().addListener((obs, oldV, newV) -> {
+            if (oldV)
+                loadTableValues();
+            if (oldV && Nvl(txfCodFilme.getText()).isEmpty())
+                txfNomeFilme.clear();
+            else if (oldV && !Nvl(txfCodFilme.getText()).isEmpty()) {
+                if (DBObjects.filmeContains(Integer.valueOf(txfCodFilme.getText())))
+                    txfNomeFilme.setText(DBObjects.getFilmeByCod(this.getClass(),
+                            Integer.valueOf(txfCodFilme.getText())).getNomeFilme());
+                else {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            String.format("Filme não encontrada para código %s", txfCodFilme.getText())).getAlert().showAndWait();
+                    txfCodFilme.clear();
+                    txfNomeFilme.clear();
+                }
+            }
+        });
+        SearchFieldTable searchFilme = new SearchFieldTable(imgBuscaFilme, "Filmes",
+                new String[]{"Código", "Nome", "Valor"},
+                "SELECT FIL.CODFILME, FIL.NOMEFILME, GEN.NOMEGENERO, FIL.MINFILME FROM TFILMES FIL\n" +
+                        "INNER JOIN TGENEROS GEN ON (FIL.CODGENERO = GEN.CODGENERO)");
+        searchFilme.getStage().setOnCloseRequest(e -> {
+            if (searchFilme.getKeyReturn() != null) {
+                txfCodFilme.setText(searchFilme.getKeyReturn().get(0));
+                txfNomeFilme.setText(searchFilme.getKeyReturn().get(1));
                 loadTableValues();
             }
         });

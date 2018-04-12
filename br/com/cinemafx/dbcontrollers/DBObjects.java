@@ -203,6 +203,13 @@ public class DBObjects {
         }
     }
 
+    public static Boolean filmeContains(Integer codFilme) {
+        if (DBObjects.getFilmes().stream().filter(filme -> filme.getCodFilme() == codFilme).count() == 0)
+            return false;
+        else
+            return true;
+    }
+
     public static Filme getFilmeByCod(Class invocador, Integer codFilme) {
         Filme filme = null;
         try {
@@ -214,6 +221,13 @@ public class DBObjects {
         } finally {
             return filme;
         }
+    }
+
+    public static Boolean exibContains(Integer codExib) {
+        if (DBObjects.getExibicoes().stream().filter(exib -> exib.getCodExibicao() == codExib).count() == 0)
+            return false;
+        else
+            return true;
     }
 
     public static Exibicao getExibicaoByCod(Class invocador, Integer codExibicao) {
