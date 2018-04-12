@@ -34,7 +34,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
     private ObservableList<Sessao> sessaoObservableList = FXCollections.observableArrayList();
     private Sessao cachedSessao;
     private Conexao conex = new Conexao(this.getClass());
-
+    /*Adicionar no FXML Filme-Cod, Nome e Img*/
     @FXML
     private AnchorPane paneGrade, paneForm;
     @FXML
@@ -45,9 +45,10 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
     @FXML
     private Label lblMensagem;
     @FXML
-    private TextField txfCodSalaGrade, txfNomeSalaGrade, txfCodSala, txfNomeSala, txfCodExib, txfNomeExib;
+    private TextField txfCodSalaGrade, txfNomeSalaGrade, txfCodSala, txfNomeSala,
+            txfCodExib, txfNomeExib, txfCodFilme, txfNomeFilme;
     @FXML
-    private ImageView imgBuscaSalaGrade, imgBuscaSala, imgBuscaExib;
+    private ImageView imgBuscaSalaGrade, imgBuscaSala, imgBuscaExib, imgBuscaFilme;
     @FXML
     private DatePicker dtpDataIniGrade, dtpDataFimGrade, dtpDataSes;
     @FXML
@@ -105,6 +106,32 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         propFrameStatus.addListener((obs, oldV, newV) -> {
             if (newV.intValue() == 1) btnEditar.fire(); //Alterando
         });
+        txfCodSalaGrade.focusedProperty().addListener((obs, oldV, newV) -> {
+            if (oldV)
+                loadTableValues();
+            if (oldV && Nvl(txfCodSalaGrade.getText()).isEmpty())
+                txfNomeSalaGrade.clear();
+            else if (oldV && !Nvl(txfCodSalaGrade.getText()).isEmpty()) {
+                if (DBObjects.salaContains(Integer.valueOf(txfCodSalaGrade.getText())))
+                    txfNomeSalaGrade.setText(DBObjects.getSalaByCod(this.getClass(),
+                            Integer.valueOf(txfCodSalaGrade.getText())).getRefSala());
+                else {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            String.format("Sala não encontrada para código %s", txfCodSalaGrade.getText())).getAlert().showAndWait();
+                    txfCodSalaGrade.clear();
+                    txfNomeSalaGrade.clear();
+                }
+            }
+        });
+        SearchFieldTable searchSalaGrade = new SearchFieldTable(imgBuscaSalaGrade, "Salas",
+                new String[]{"Código", "Referência", "Capacidade"}, "SELECT CODSALA, REFSALA, CAPACIDADE FROM TSALAS ORDER BY 1");
+        searchSalaGrade.getStage().setOnCloseRequest(e -> {
+            if (searchSalaGrade.getKeyReturn() != null) {
+                txfCodSalaGrade.setText(searchSalaGrade.getKeyReturn().get(0));
+                txfNomeSalaGrade.setText(searchSalaGrade.getKeyReturn().get(1));
+                loadTableValues();
+            }
+        });
         dtpDataIniGrade.valueProperty().addListener((obs, oldV, newV) -> {
             if (newV == null) {
                 dtpDataIniGrade.setValue(oldV);
@@ -129,20 +156,20 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
             } else
                 loadTableValues();
         });
-        txfCodSalaGrade.focusedProperty().addListener((obs, oldV, newV) -> {
+        txfCodSala.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV)
                 loadTableValues();
-            if (oldV && Nvl(txfCodSalaGrade.getText()).isEmpty())
-                txfNomeSalaGrade.clear();
-            else if (oldV && !Nvl(txfCodSalaGrade.getText()).isEmpty()) {
-                if (DBObjects.salaContains(Integer.valueOf(txfCodSalaGrade.getText())))
-                    txfNomeSalaGrade.setText(DBObjects.getSalaByCod(this.getClass(),
-                            Integer.valueOf(txfCodSalaGrade.getText())).getRefSala());
+            if (oldV && Nvl(txfCodSala.getText()).isEmpty())
+                txfNomeSala.clear();
+            else if (oldV && !Nvl(txfCodSala.getText()).isEmpty()) {
+                if (DBObjects.salaContains(Integer.valueOf(txfCodSala.getText())))
+                    txfNomeSala.setText(DBObjects.getSalaByCod(this.getClass(),
+                            Integer.valueOf(txfCodSala.getText())).getRefSala());
                 else {
                     new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
-                            String.format("Sala não encontrada para código %s", txfCodSalaGrade.getText())).getAlert().showAndWait();
-                    txfCodSalaGrade.clear();
-                    txfNomeSalaGrade.clear();
+                            String.format("Sala não encontrada para código %s", txfCodSala.getText())).getAlert().showAndWait();
+                    txfCodSala.clear();
+                    txfNomeSala.clear();
                 }
             }
         });
@@ -150,11 +177,28 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 new String[]{"Código", "Referência", "Capacidade"}, "SELECT CODSALA, REFSALA, CAPACIDADE FROM TSALAS ORDER BY 1");
         searchSala.getStage().setOnCloseRequest(e -> {
             if (searchSala.getKeyReturn() != null) {
-                txfCodSalaGrade.setText(searchSala.getKeyReturn().get(0));
-                txfNomeSalaGrade.setText(searchSala.getKeyReturn().get(1));
+                txfCodSala.setText(searchSala.getKeyReturn().get(0));
+                txfNomeFilme.setText(searchSala.getKeyReturn().get(1));
                 loadTableValues();
             }
         });
+        /*txfCodExib.focusedProperty().addListener((obs, oldV, newV) -> {
+            if (oldV)
+                loadTableValues();
+            if (oldV && Nvl(txfCodExib.getText()).isEmpty())
+                txfNomeExib.clear();
+            else if (oldV && !Nvl(txfCodExib.getText()).isEmpty()) {
+                if (DBObjects.salaContains(Integer.valueOf(txfCodSala.getText())))
+                    txfNomeSala.setText(DBObjects.getSalaByCod(this.getClass(),
+                            Integer.valueOf(txfCodSala.getText())).getRefSala());
+                else {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            String.format("Sala não encontrada para código %s", txfCodSala.getText())).getAlert().showAndWait();
+                    txfCodSala.clear();
+                    txfNomeSala.clear();
+                }
+            }
+        });*/
     }
 
     @Override
@@ -282,6 +326,8 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         txfNomeExib.setText(sessao.getExibicao().getNomeExibicao());
         dtpDataSes.setValue(sessao.getDataHoraExib().toLocalDateTime().toLocalDate());
         tmpHoraSes.setValue(sessao.getDataHoraExib().toLocalDateTime().toLocalTime());
+        txfCodFilme.setText(String.valueOf(sessao.getFilme().getCodFilme()));
+        txfNomeFilme.setText(sessao.getFilme().getNomeFilme());
         setAtualizando(false);
         ctrlLinhasTab(tbvSessoes.getItems().indexOf(sessao), true);
     }
