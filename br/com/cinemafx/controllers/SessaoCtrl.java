@@ -13,6 +13,7 @@ import com.jfoenix.controls.JFXTimePicker;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -91,6 +92,9 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tbvSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvLoteSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvSessoes.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showInForm(newItem));
+        preSessaoObservableList.addListener((ListChangeListener<Sessao>) values -> {
+            System.out.println(String.format("Changed to %d from %d", values.getRemovedSize(), values.getAddedSize()));
+        });
         tbvSessoes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
         });
