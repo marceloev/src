@@ -27,7 +27,7 @@ public class Sessao {
         this.setSala(sala);
         this.setFilme(filme);
         this.setExibicao(exibicao);
-        this.setDataHoraExib(Timestamp.from(Instant.now()));
+        this.setDataHoraExib(dataHoraExib);
     }
 
     @Override

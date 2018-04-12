@@ -1,10 +1,14 @@
 package br.com.cinemafx.controllers;
 
+import br.com.cinemafx.dbcontrollers.Conexao;
 import br.com.cinemafx.dbcontrollers.DBObjects;
-import br.com.cinemafx.methods.Functions;
+import br.com.cinemafx.methods.MaskField;
+import br.com.cinemafx.methods.SearchFieldTable;
 import br.com.cinemafx.models.*;
 import br.com.cinemafx.views.dialogs.FormattedDialog;
+import br.com.cinemafx.views.dialogs.ModelDialog;
 import br.com.cinemafx.views.dialogs.ModelException;
+import com.jfoenix.controls.JFXTimePicker;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -13,38 +17,41 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.ImageViewBuilder;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.text.Text;
 import javafx.util.Callback;
 
 import java.net.URL;
 import java.sql.Timestamp;
-import java.util.NoSuchElementException;
+import java.time.LocalDate;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
+
+import static br.com.cinemafx.methods.Functions.Nvl;
 
 public class SessaoCtrl implements Initializable, CadCtrlIntface {
 
+    private ImageView imgView = ImageViewBuilder.create().image(imgGrade).fitHeight(31).fitWidth(35).build();
     private ObservableList<Sessao> sessaoObservableList = FXCollections.observableArrayList();
-    private Sessao cachedSessao = new Sessao();
+    private Sessao cachedSessao;
+    private Conexao conex = new Conexao(this.getClass());
 
     @FXML
-    private AnchorPane paneForm, paneGrade;
+    private AnchorPane paneGrade, paneForm;
     @FXML
-    private TableView<Sessao> tbvSessoes;
-    @FXML
-    private TextField txfCodFilme, txfNomeFilme;
+    private TableView<Sessao> tbvSessoes, tbvLoteSessoes;
     @FXML
     private Button btnView, btnAtualizar, btnAdicionar, btnSalvar, btnCancelar,
             btnEditar, btnDuplicar, btnExcluir, btnPrimeiro, btnAnterior, btnProximo, btnUltimo;
     @FXML
     private Label lblMensagem;
     @FXML
-    private TextArea txaSinopse;
+    private TextField txfCodSalaGrade, txfNomeSalaGrade, txfCodSala, txfNomeSala, txfCodExib, txfNomeExib;
     @FXML
-    private Text txtGenero, txtDuracao, txtHoraFim;
+    private ImageView imgBuscaSalaGrade, imgBuscaSala, imgBuscaExib;
     @FXML
-    private ImageView imgFilme;
+    private DatePicker dtpDataIniGrade, dtpDataFimGrade, dtpDataSes;
+    @FXML
+    private JFXTimePicker tmpHoraSes;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -61,15 +68,18 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
 
     @Override
     public void appCalls() {
-        paneForm.setVisible(false);
         paneGrade.setVisible(true);
+        paneForm.setVisible(false);
+        dtpDataIniGrade.setValue(LocalDate.now());
+        dtpDataFimGrade.setValue(LocalDate.now().plusDays(1));
+        tmpHoraSes.setIs24HourView(true);
         paneForm.visibleProperty().addListener((obs, oldV, newV) -> {
             paneGrade.setVisible(oldV);
             if (newV) {
-                btnView.setGraphic(imgForm);
+                imgView.setImage(imgForm);
                 btnView.getTooltip().setText("Modo Formulário");
             } else {
-                btnView.setGraphic(imgGrade);
+                imgView.setImage(imgGrade);
                 btnView.getTooltip().setText("Modo Grade");
             }
         });
@@ -78,6 +88,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tbvSessoes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
         });
+        btnView.setGraphic(imgView);
         btnView.setOnAction(e -> ctrlAction(FrameAction.ChangeView));
         btnAtualizar.setOnAction(e -> ctrlAction(FrameAction.Atualizar));
         btnAdicionar.setOnAction(e -> ctrlAction(FrameAction.Adicionar));
@@ -90,6 +101,60 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         btnAnterior.setOnAction(e -> ctrlAction(FrameAction.Anterior));
         btnProximo.setOnAction(e -> ctrlAction(FrameAction.Proximo));
         btnUltimo.setOnAction(e -> ctrlAction(FrameAction.Ultimo));
+        MaskField.NumberField(txfCodSalaGrade, 11);
+        propFrameStatus.addListener((obs, oldV, newV) -> {
+            if (newV.intValue() == 1) btnEditar.fire(); //Alterando
+        });
+        dtpDataIniGrade.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null) {
+                dtpDataIniGrade.setValue(oldV);
+                new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                        String.format("É obrigatório informar data inicial para filtro")).getAlert().showAndWait();
+            } else if (newV.isAfter(dtpDataFimGrade.getValue())) {
+                dtpDataIniGrade.setValue(oldV);
+                new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                        String.format("Data inicial não pode ser posterior a data final")).getAlert().showAndWait();
+            } else
+                loadTableValues();
+        });
+        dtpDataFimGrade.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null) {
+                dtpDataFimGrade.setValue(oldV);
+                new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                        String.format("É obrigatório informar data final para filtro")).getAlert().showAndWait();
+            } else if (newV.isBefore(dtpDataIniGrade.getValue())) {
+                dtpDataFimGrade.setValue(oldV);
+                new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                        String.format("Data final não pode ser anterior a data inicial")).getAlert().showAndWait();
+            } else
+                loadTableValues();
+        });
+        txfCodSalaGrade.focusedProperty().addListener((obs, oldV, newV) -> {
+            if (oldV)
+                loadTableValues();
+            if (oldV && Nvl(txfCodSalaGrade.getText()).isEmpty())
+                txfNomeSalaGrade.clear();
+            else if (oldV && !Nvl(txfCodSalaGrade.getText()).isEmpty()) {
+                if (DBObjects.salaContains(Integer.valueOf(txfCodSalaGrade.getText())))
+                    txfNomeSalaGrade.setText(DBObjects.getSalaByCod(this.getClass(),
+                            Integer.valueOf(txfCodSalaGrade.getText())).getRefSala());
+                else {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            String.format("Sala não encontrada para código %s", txfCodSalaGrade.getText())).getAlert().showAndWait();
+                    txfCodSalaGrade.clear();
+                    txfNomeSalaGrade.clear();
+                }
+            }
+        });
+        SearchFieldTable searchSala = new SearchFieldTable(imgBuscaSalaGrade, "Salas",
+                new String[]{"Código", "Referência", "Capacidade"}, "SELECT CODSALA, REFSALA, CAPACIDADE FROM TSALAS ORDER BY 1");
+        searchSala.getStage().setOnCloseRequest(e -> {
+            if (searchSala.getKeyReturn() != null) {
+                txfCodSalaGrade.setText(searchSala.getKeyReturn().get(0));
+                txfNomeSalaGrade.setText(searchSala.getKeyReturn().get(1));
+                loadTableValues();
+            }
+        });
     }
 
     @Override
@@ -100,61 +165,71 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
 
     @Override
     public void loadTableValues() {
+        conex.remakeConexao();
+        DBObjects.reloadAll();
         try {
             sessaoObservableList.clear();
-            sessaoObservableList.addAll(DBObjects.reloadSessoes().stream()
-                    .filter(sessao -> sessao.getCodSessao() != 0).collect(Collectors.toList()));
+            conex.createStatement("SELECT SES.CODSESSAO, SAL.CODSALA, FIL.CODFILME, EXB.CODEXIB, SES.DATAHORA\n" +
+                    "    FROM TSESSOES SES\n" +
+                    "        JOIN TFILMES FIL ON (SES.CODFILME = FIL.CODFILME)\n" +
+                    "        JOIN TGENEROS GEN ON (FIL.CODGENERO = GEN.CODGENERO)\n" +
+                    "        JOIN TSALAS SAL ON (SES.CODSALA = SAL.CODSALA)\n" +
+                    "        JOIN TEXIBS EXB ON (SES.CODEXIB = EXB.CODEXIB)\n" +
+                    "    WHERE SES.CODSESSAO <> 0\n" +
+                    "    AND DATE_FORMAT(SES.DATAHORA, '%Y-%m-%d') >= ?\n" +
+                    "    AND DATE_FORMAT((SES.DATAHORA + INTERVAL FIL.MINFILME MINUTE), '%Y-%m-%d') <= ?\n" +
+                    "    AND (? = 0 OR SAL.CODSALA = ?)\n" +
+                    "    ORDER BY 1");
+            conex.addParametro(dtpDataIniGrade.getValue(), dtpDataFimGrade.getValue(),
+                    Nvl(txfCodSalaGrade.getText(), "0"), Nvl(txfCodSalaGrade.getText(), "0"));
+            conex.createSet();
+            while (conex.rs.next()) {
+                Sessao sessao = new Sessao(
+                        conex.rs.getInt(1),
+                        DBObjects.getSalaByCod(this.getClass(), conex.rs.getInt(2)),
+                        DBObjects.getFilmeByCod(this.getClass(), conex.rs.getInt(3)),
+                        DBObjects.getExibicaoByCod(this.getClass(), conex.rs.getInt(4)),
+                        conex.rs.getTimestamp(5));
+                sessaoObservableList.add(sessao);
+            }
             sendMensagem(lblMensagem, true, "Tabela de Sessões atualizada com sucesso!");
         } catch (Exception ex) {
             new ModelException(this.getClass(),
                     String.format("Erro ao tentar atualizar tabela de sessões\n%s", ex.getMessage()), ex)
                     .getAlert().showAndWait();
             sessaoObservableList.clear();
+        } finally {
+            conex.desconecta();
         }
     }
 
     @Override
     public TableColumn[] getTableColumns() {
-        /*CODSESSAO, DATAINI, DATAFIM, SALA (CODSALA, REFSALA, CAPACIDADE), FILME(CODFILME, NOMEFILME, MINFILME, NOMEGENERO), EXIB(INTEIRA, MEIA)*/
         TableColumn[] tableColumns = new TableColumn[6];
-        tableColumns[0] = new ModelTableColumn<Sessao, Integer>("#", "codSessao", TableColumnType.Inteiro).setPercentSize(3.5);
-        tableColumns[1] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Exib.", "dataHoraExib", TableColumnType.Data_Hora).setPercentSize(10.0);
-        tableColumns[2] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Fim", "dataHoraFim", TableColumnType.Data_Hora).setPercentSize(10.0);
-
-        /*---------------------------> Coluna de Preços*/
-        tableColumns[3] = new ModelTableColumn<Sessao, Double>("Preços", null, null);
-        TableColumn[] tbColunasPrecos = new TableColumn[2];
-        tbColunasPrecos[0] = new ModelTableColumn<Sessao, Integer>("Inteira", null, TableColumnType.Dinheiro);
-        tbColunasPrecos[0].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Double>, ObservableValue<Double>>)
-                p -> new ReadOnlyObjectWrapper(p.getValue().getExibicao().getVlrExibicao()));
-        tbColunasPrecos[1] = new ModelTableColumn<Sessao, Integer>("Meia", null, TableColumnType.Dinheiro);
-        tbColunasPrecos[1].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Double>, ObservableValue<Double>>)
-                p -> new ReadOnlyObjectWrapper(p.getValue().getExibicao().getVlrExibicao() / 2));
-        tableColumns[3].getColumns().addAll(tbColunasPrecos);
-        /*Fim da Coluna de Preços <--------------------------*/
+        tableColumns[0] = new ModelTableColumn<Sessao, Integer>("#", "codSessao", TableColumnType.Inteiro).setPercentSize(2.5);
 
         /*---------------------------> Coluna de Salas*/
-        tableColumns[4] = new ModelTableColumn<Sessao, Object>("Sala", null, null);
+        tableColumns[1] = new ModelTableColumn<Sessao, Object>("Sala", null, null);
         TableColumn[] tbColunasSala = new TableColumn[3];
-        tbColunasSala[0] = new ModelTableColumn<Sessao, Integer>("#", null, TableColumnType.Inteiro);
+        tbColunasSala[0] = new ModelTableColumn<Sessao, Integer>("#", null, TableColumnType.Inteiro).setPercentSize(3.5);
         tbColunasSala[0].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Integer>, ObservableValue<Integer>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getSala().getCodSala()));
-        tbColunasSala[1] = new ModelTableColumn<Sessao, Integer>("Referência", null, TableColumnType.Texto_Pequeno);
+        tbColunasSala[1] = new ModelTableColumn<Sessao, Integer>("Referência", null, TableColumnType.Texto_Pequeno).setPercentSize(10.0);
         tbColunasSala[1].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, String>, ObservableValue<String>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getSala().getRefSala()));
         tbColunasSala[2] = new ModelTableColumn<Sessao, Integer>("Capacidade", null, TableColumnType.Texto_Pequeno);
         tbColunasSala[2].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, String>, ObservableValue<Integer>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getSala().getCapacidade()));
-        tableColumns[4].getColumns().addAll(tbColunasSala);
+        tableColumns[1].getColumns().addAll(tbColunasSala);
         /*Fim da Coluna de Salas <--------------------------*/
 
         /*---------------------------> Coluna de Filmes*/
-        tableColumns[5] = new ModelTableColumn<Sessao, Object>("Filme", null, null);
+        tableColumns[2] = new ModelTableColumn<Sessao, Object>("Filme", null, null);
         TableColumn[] tbColunasFilme = new TableColumn[4];
         tbColunasFilme[0] = new ModelTableColumn<Sessao, Integer>("#", null, TableColumnType.Inteiro).setPercentSize(3.5);
         tbColunasFilme[0].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Integer>, ObservableValue<Integer>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getFilme().getCodFilme()));
-        tbColunasFilme[1] = new ModelTableColumn<Sessao, Integer>("Nome", null, TableColumnType.Texto_Pequeno).setPercentSize(17.0);
+        tbColunasFilme[1] = new ModelTableColumn<Sessao, Integer>("Nome", null, TableColumnType.Texto_Pequeno).setPercentSize(20.0);
         tbColunasFilme[1].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, String>, ObservableValue<String>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getFilme().getNomeFilme()));
         tbColunasFilme[2] = new ModelTableColumn<Sessao, Integer>("Gênero", null, TableColumnType.Texto_Pequeno).setPercentSize(7.5);
@@ -163,8 +238,23 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tbColunasFilme[3] = new ModelTableColumn<Sessao, Integer>("Duração(Min.)", null, TableColumnType.Inteiro).setPercentSize(5.0);
         tbColunasFilme[3].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, String>, ObservableValue<Integer>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getFilme().getMinFilme()));
-        tableColumns[5].getColumns().addAll(tbColunasFilme);
+        tableColumns[2].getColumns().addAll(tbColunasFilme);
         /*Fim da Coluna de Filmes <--------------------------*/
+
+        tableColumns[3] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Exib.", "dataHoraExib", TableColumnType.Data_Hora).setPercentSize(15.0);
+        tableColumns[4] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Fim", "dataHoraFim", TableColumnType.Data_Hora).setPercentSize(15.0);
+
+        /*---------------------------> Coluna de Preços*/
+        tableColumns[5] = new ModelTableColumn<Sessao, Double>("Preços", null, null);
+        TableColumn[] tbColunasPrecos = new TableColumn[2];
+        tbColunasPrecos[0] = new ModelTableColumn<Sessao, Integer>("Inteira", null, TableColumnType.Dinheiro).setPercentSize(5.0);
+        tbColunasPrecos[0].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Double>, ObservableValue<Double>>)
+                p -> new ReadOnlyObjectWrapper(p.getValue().getExibicao().getVlrExibicao()));
+        tbColunasPrecos[1] = new ModelTableColumn<Sessao, Integer>("Meia", null, TableColumnType.Dinheiro).setPercentSize(5.0);
+        tbColunasPrecos[1].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Double>, ObservableValue<Double>>)
+                p -> new ReadOnlyObjectWrapper(p.getValue().getExibicao().getVlrExibicao() / 2));
+        tableColumns[5].getColumns().addAll(tbColunasPrecos);
+        /*Fim da Coluna de Preços <--------------------------*/
 
         return tableColumns;
     }
@@ -182,13 +272,12 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         if (sessao == null) return;
         setAtualizando(true);
         setCachedSessao(sessao);
-        txfCodFilme.setText(String.valueOf(sessao.getFilme().getCodFilme()));
-        txfNomeFilme.setText(sessao.getFilme().getNomeFilme());
-        imgFilme.setImage(sessao.getFilme().getCartazFilme());
-        txtGenero.setText(sessao.getFilme().getGenero().getNomeGenero());
-        txtDuracao.setText(sessao.getFilme().getMinFilme() + "min.");
-        txtHoraFim.setText(Functions.getDataFormatted(Functions.dataHoraFormater, sessao.getDataHoraFim()));
-        txaSinopse.setText(sessao.getFilme().getSinopse());
+        txfCodSala.setText(String.valueOf(sessao.getSala().getCodSala()));
+        txfNomeSala.setText(sessao.getSala().getRefSala());
+        txfCodExib.setText(String.valueOf(sessao.getExibicao().getCodExibicao()));
+        txfNomeExib.setText(sessao.getExibicao().getNomeExibicao());
+        dtpDataSes.setValue(sessao.getDataHoraExib().toLocalDateTime().toLocalDate());
+        tmpHoraSes.setValue(sessao.getDataHoraExib().toLocalDateTime().toLocalTime());
         setAtualizando(false);
         ctrlLinhasTab(tbvSessoes.getItems().indexOf(sessao), true);
     }
@@ -200,17 +289,6 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 paneForm.setVisible(!paneForm.isVisible());
                 break;
             case Atualizar:
-                setFrameStatus(FrameStatus.Status.Visualizando);
-                disableButtons(false);
-                loadTableValues();
-                try {
-                    tbvSessoes.getSelectionModel().select(tbvSessoes.getItems().stream()
-                            .filter(sessao -> sessao.getCodSessao() == getCachedSessao().getCodSessao())
-                            .findFirst().get());
-                } catch (NoSuchElementException ex) {
-                    sendMensagem(lblMensagem, false, "Registro pré-selecionado não existe mais");
-                    tbvSessoes.getSelectionModel().clearAndSelect(0);
-                }
                 break;
             case Adicionar:
                 break;

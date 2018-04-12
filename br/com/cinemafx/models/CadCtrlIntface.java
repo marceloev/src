@@ -7,7 +7,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.ImageViewBuilder;
 import javafx.util.Duration;
 
 public interface CadCtrlIntface {
@@ -16,16 +15,10 @@ public interface CadCtrlIntface {
     BooleanProperty atualizando = new SimpleBooleanProperty(false);
     IntegerProperty propFrameStatus = new SimpleIntegerProperty(0);
     FrameStatus frameStatus = new FrameStatus();
-    ImageView imgForm = ImageViewBuilder.create().image(new Image("/br/com/cinemafx/views/images/Icone_Modo_Formulario.png"))
-            .fitHeight(31)
-            .fitWidth(35)
-            .build();
-    ImageView imgGrade = ImageViewBuilder.create().image(new Image("/br/com/cinemafx/views/images/Icone_Modo_Grade.png"))
-            .fitHeight(31)
-            .fitWidth(35)
-            .build();
-    ImageView imgSucesso = ImageViewBuilder.create().image(new Image("/br/com/cinemafx/views/images/Sucesso.png")).build();
-    ImageView imgAlerta = ImageViewBuilder.create().image(new Image("/br/com/cinemafx/views/images/Alerta.png")).build();
+    Image imgForm = new Image("/br/com/cinemafx/views/images/Icone_Modo_Formulario.png");
+    Image imgGrade = new Image("/br/com/cinemafx/views/images/Icone_Modo_Grade.png");
+    Image imgSucesso = new Image("/br/com/cinemafx/views/images/Sucesso.png");
+    Image imgAlerta = new Image("/br/com/cinemafx/views/images/Alerta.png");
 
     void estrutura();
 
@@ -42,7 +35,7 @@ public interface CadCtrlIntface {
     default void sendMensagem(Label lbl, Boolean sucesso, String mensagem) {
         if (sucesso) {
             timeline.stop();
-            lbl.setGraphic(imgSucesso);
+            lbl.setGraphic(new ImageView(imgSucesso));
             lbl.setVisible(true);
             lbl.setText(mensagem);
             timeline.getKeyFrames().clear();
@@ -52,7 +45,7 @@ public interface CadCtrlIntface {
             timeline.play();
         } else {
             timeline.stop();
-            lbl.setGraphic(imgAlerta);
+            lbl.setGraphic(new ImageView(imgAlerta));
             lbl.setVisible(true);
             lbl.setText(mensagem);
             timeline.getKeyFrames().clear();

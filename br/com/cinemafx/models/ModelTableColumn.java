@@ -72,6 +72,8 @@ public class ModelTableColumn<S, T> extends TableColumn {
                         public void updateItem(Double item, boolean empty) {
                             if (item != null)
                                 textDh.setText(String.format("%,.2f", item));
+                            else
+                                textDh.setText(null);
                         }
                     };
                     cell.setGraphic(textDh);

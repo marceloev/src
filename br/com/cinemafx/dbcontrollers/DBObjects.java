@@ -89,6 +89,7 @@ public class DBObjects {
         conex.remakeConexao();
         filmes.clear();
         try {
+            //reloadGeneros();
             conex.createStatement("SELECT CODFILME, NOMEFILME, SINOPSE,\n" +
                     "CUSTOFILME, CODGENERO, MINFILME, IMAGEM\n" +
                     "FROM TFILMES");
@@ -174,4 +175,58 @@ public class DBObjects {
         if (sessoes.isEmpty()) reloadSessoes();
         return sessoes;
     }
+
+    public static void reloadAll() {
+        reloadSala();
+        reloadGeneros();
+        reloadFilmes();
+        reloadExibicoes();
+    }
+
+    public static Boolean salaContains(Integer codSala) {
+        if (DBObjects.getSalas().stream().filter(sala -> sala.getCodSala() == codSala).count() == 0)
+            return false;
+        else
+            return true;
+    }
+
+    public static Sala getSalaByCod(Class invocador, Integer codSala) {
+        Sala sala = null;
+        try {
+            sala = DBObjects.getSalas().stream().filter(salas -> salas.getCodSala() == codSala).findFirst().get();
+        } catch (NoSuchElementException ex) {
+            new ModelException(invocador, String.format("Sala para código %d não encontrada", codSala)).getAlert().showAndWait();
+        } catch (Exception ex) {
+            new ModelException(invocador, String.format("Erro ao tentar localizar sala por código\n%s", ex.getMessage())).getAlert().showAndWait();
+        } finally {
+            return sala;
+        }
+    }
+
+    public static Filme getFilmeByCod(Class invocador, Integer codFilme) {
+        Filme filme = null;
+        try {
+            filme = DBObjects.getFilmes().stream().filter(filmes -> filmes.getCodFilme() == codFilme).findFirst().get();
+        } catch (NoSuchElementException ex) {
+            new ModelException(invocador, String.format("Filme para código %d não encontrada", filme)).getAlert().showAndWait();
+        } catch (Exception ex) {
+            new ModelException(invocador, String.format("Erro ao tentar localizar filme por código\n%s", ex.getMessage())).getAlert().showAndWait();
+        } finally {
+            return filme;
+        }
+    }
+
+    public static Exibicao getExibicaoByCod(Class invocador, Integer codExibicao) {
+        Exibicao exibicao = null;
+        try {
+            exibicao = DBObjects.getExibicoes().stream().filter(exib -> exib.getCodExibicao() == codExibicao).findFirst().get();
+        } catch (NoSuchElementException ex) {
+            new ModelException(invocador, String.format("Exibição para código %d não encontrada", codExibicao)).getAlert().showAndWait();
+        } catch (Exception ex) {
+            new ModelException(invocador, String.format("Erro ao tentar localizar exibição por código\n%s", ex.getMessage())).getAlert().showAndWait();
+        } finally {
+            return exibicao;
+        }
+    }
+
 }

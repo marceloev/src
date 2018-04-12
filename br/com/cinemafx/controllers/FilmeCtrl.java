@@ -17,6 +17,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.ImageViewBuilder;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 
@@ -34,6 +35,7 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
     ObservableList<Filme> filmeObservableList = FXCollections.observableArrayList();
     ObservableList<String> generoObservableList = FXCollections.observableArrayList();
     private Filme filmeCached = new Filme();
+    private ImageView imgView = ImageViewBuilder.create().image(imgGrade).fitHeight(31).fitWidth(35).build();
 
     @FXML
     private AnchorPane paneGrade, paneForm;
@@ -77,10 +79,10 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
         paneForm.visibleProperty().addListener((obs, oldV, newV) -> {
             paneGrade.setVisible(oldV);
             if (newV) {
-                btnView.setGraphic(imgForm);
+                imgView.setImage(imgForm);
                 btnView.getTooltip().setText("Modo Formulário");
             } else {
-                btnView.setGraphic(imgGrade);
+                imgView.setImage(imgGrade);
                 btnView.getTooltip().setText("Modo Grade");
             }
         });
@@ -89,6 +91,7 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
         tbvFilmes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
         });
+        btnView.setGraphic(imgView);
         btnView.setOnAction(e -> ctrlAction(FrameAction.ChangeView));
         btnAtualizar.setOnAction(e -> ctrlAction(FrameAction.Atualizar));
         btnAdicionar.setOnAction(e -> ctrlAction(FrameAction.Adicionar));
@@ -307,7 +310,7 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
             case Cancelar:
                 //Até agora, não descobri uma forma de "cancelar" sem ter que re-buscar no banco, terei que estudar
                 ctrlAction(FrameAction.Atualizar);
-                sendMensagem(lblMensagem, true, "Operação cancelada pelo usuário");
+                sendMensagem(lblMensagem, false, "Operação cancelada pelo usuário");
                 break;
             case Editar:
                 setFrameStatus(FrameStatus.Status.Alterando);

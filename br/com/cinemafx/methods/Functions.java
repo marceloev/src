@@ -2,17 +2,21 @@ package br.com.cinemafx.methods;
 
 import br.com.cinemafx.views.dialogs.ModelException;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.ImageViewBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 public class Functions {
 
     public static final Image noImageFilme = new Image("/br/com/cinemafx/views/images/Icon_Sem_Imagem.png");
-    public static SimpleDateFormat dataHoraFormater = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    public static final SimpleDateFormat dataHoraFormater = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    public static final DateTimeFormatter timeHoraformatter = DateTimeFormatter.ofPattern("HH:mm");
 
     public static String getDataFormatted(SimpleDateFormat dataHoraFormater, Object value) {
         String valor = "";
@@ -30,6 +34,11 @@ public class Functions {
 
     public static final String Nvl(String valor) {
         if (valor == null) return "";
+        else return valor;
+    }
+
+    public static final String Nvl(String valor, String padrao) {
+        if (valor == null || valor.isEmpty()) return padrao;
         else return valor;
     }
 

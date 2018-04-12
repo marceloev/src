@@ -78,6 +78,13 @@ public class Conexao {
         GravaLog.gravaInfo(getInvocador(), "ResultSet Source criado em " + rsTimeTotal + "ms");
     }
 
+    public int countRows() throws SQLException {
+        this.rs.last();
+        int rows = this.rs.getRow();
+        this.rs.beforeFirst();
+        return rows;
+    }
+
     public void addParametro(Object... objetos) throws SQLException {
         for (Object objeto : objetos) addParametro(objeto);
     }
