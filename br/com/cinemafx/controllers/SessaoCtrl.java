@@ -205,7 +205,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
 
     @Override
     public TableColumn[] getTableColumns() {
-        TableColumn[] tableColumns = new TableColumn[6];
+        TableColumn[] tableColumns = new TableColumn[7];
         tableColumns[0] = new ModelTableColumn<Sessao, Integer>("#", "codSessao", TableColumnType.Inteiro).setPercentSize(2.5);
 
         /*---------------------------> Coluna de Salas*/
@@ -241,11 +241,15 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tableColumns[2].getColumns().addAll(tbColunasFilme);
         /*Fim da Coluna de Filmes <--------------------------*/
 
-        tableColumns[3] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Exib.", "dataHoraExib", TableColumnType.Data_Hora).setPercentSize(15.0);
-        tableColumns[4] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Fim", "dataHoraFim", TableColumnType.Data_Hora).setPercentSize(15.0);
+        tableColumns[3] = new ModelTableColumn<Sessao, String>("Exibição", null, TableColumnType.Texto_Pequeno);
+        tableColumns[3].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, String>, ObservableValue<String>>)
+                p -> new ReadOnlyObjectWrapper(p.getValue().getExibicao().getNomeExibicao()));
+
+        tableColumns[4] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Exib.", "dataHoraExib", TableColumnType.Data_Hora).setPercentSize(12.0);
+        tableColumns[5] = new ModelTableColumn<Sessao, Timestamp>("Data/Hora Fim", "dataHoraFim", TableColumnType.Data_Hora).setPercentSize(12.0);
 
         /*---------------------------> Coluna de Preços*/
-        tableColumns[5] = new ModelTableColumn<Sessao, Double>("Preços", null, null);
+        tableColumns[6] = new ModelTableColumn<Sessao, Double>("Preços", null, null);
         TableColumn[] tbColunasPrecos = new TableColumn[2];
         tbColunasPrecos[0] = new ModelTableColumn<Sessao, Integer>("Inteira", null, TableColumnType.Dinheiro).setPercentSize(5.0);
         tbColunasPrecos[0].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Double>, ObservableValue<Double>>)
@@ -253,7 +257,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tbColunasPrecos[1] = new ModelTableColumn<Sessao, Integer>("Meia", null, TableColumnType.Dinheiro).setPercentSize(5.0);
         tbColunasPrecos[1].setCellValueFactory((Callback<TableColumn.CellDataFeatures<Sessao, Double>, ObservableValue<Double>>)
                 p -> new ReadOnlyObjectWrapper(p.getValue().getExibicao().getVlrExibicao() / 2));
-        tableColumns[5].getColumns().addAll(tbColunasPrecos);
+        tableColumns[6].getColumns().addAll(tbColunasPrecos);
         /*Fim da Coluna de Preços <--------------------------*/
 
         return tableColumns;
