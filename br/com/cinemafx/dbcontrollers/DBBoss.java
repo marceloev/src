@@ -1,13 +1,11 @@
 package br.com.cinemafx.dbcontrollers;
 
 import br.com.cinemafx.methods.Functions;
-import br.com.cinemafx.models.Exibicao;
-import br.com.cinemafx.models.Filme;
-import br.com.cinemafx.models.Genero;
-import br.com.cinemafx.models.Sala;
+import br.com.cinemafx.models.*;
 import br.com.cinemafx.views.dialogs.ModelDialog;
 import br.com.cinemafx.views.dialogs.ModelException;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ObservableList;
 import javafx.scene.control.Alert.AlertType;
 import javafx.util.Pair;
 
@@ -232,6 +230,42 @@ public class DBBoss {
             throw new Exception(ex);
         } finally {
             conex.desconecta();
+        }
+    }
+
+    public static void excluiSessao(Class invocador, ArrayList<Integer> sessoes) throws Exception {
+        Conexao conex = new Conexao(invocador);
+        try {
+            conex.createStatement(String.format("DELETE FROM TSESSOES WHERE CODSESSAO IN (%s)", Functions.paramBuilder(sessoes)));
+            conex.addParametro(sessoes);
+            conex.execute();
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
+        }
+    }
+
+    public static void inseriSessao(Class invocador, ObservableList<Sessao> sessoes) throws Exception {
+        if (sessoes == null || sessoes.isEmpty()) {
+            throw new Exception("Não foram definidas sessões para o cadastro");
+        }
+        for (Sessao sessao : sessoes) {
+            Conexao conex = new Conexao(invocador);
+            try {
+                conex.createStatement("INSERT INTO TSESSOES (CODSALA, CODFILME, CODEXIB, DATAHORA)\n" +
+                        "VALUES (?, ?, ?, ?)");
+                conex.addParametro(sessao.getSala().getCodSala(),
+                        sessao.getFilme().getCodFilme(),
+                        sessao.getExibicao().getCodExibicao(),
+                        sessao.getDataHoraExib());
+                conex.execute();
+                sessoes.remove(sessao);
+            } catch (Exception ex) {
+                throw new Exception(ex);
+            } finally {
+                conex.desconecta();
+            }
         }
     }
 }

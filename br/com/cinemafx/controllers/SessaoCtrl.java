@@ -1,6 +1,7 @@
 package br.com.cinemafx.controllers;
 
 import br.com.cinemafx.dbcontrollers.Conexao;
+import br.com.cinemafx.dbcontrollers.DBBoss;
 import br.com.cinemafx.dbcontrollers.DBObjects;
 import br.com.cinemafx.methods.Functions;
 import br.com.cinemafx.methods.MaskField;
@@ -26,6 +27,7 @@ import javafx.util.Callback;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 import static br.com.cinemafx.methods.Functions.Nvl;
@@ -92,8 +94,10 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tbvSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvLoteSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvSessoes.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showInForm(newItem));
-        preSessaoObservableList.addListener((ListChangeListener<Sessao>) values -> {
-            System.out.println(String.format("Changed to %d from %d", values.getRemovedSize(), values.getAddedSize()));
+        preSessaoObservableList.addListener((ListChangeListener<Sessao>) c -> {
+            if (c.next())
+                if (preSessaoObservableList.size() > 0)
+                    btnAdicionar.fire();
         });
         tbvSessoes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
@@ -171,17 +175,18 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 loadTableValues();
         });
         txfCodSala.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (oldV)
-                loadTableValues();
-            if (oldV && Nvl(txfCodSala.getText()).isEmpty())
+            if (oldV && Nvl(txfCodSala.getText()).isEmpty()) {
+                getCachedSessao().setSala(DBObjects.getSalas().get(0));
                 txfNomeSala.clear();
-            else if (oldV && !Nvl(txfCodSala.getText()).isEmpty()) {
-                if (DBObjects.salaContains(Integer.valueOf(txfCodSala.getText())))
-                    txfNomeSala.setText(DBObjects.getSalaByCod(this.getClass(),
-                            Integer.valueOf(txfCodSala.getText())).getRefSala());
-                else {
+            } else if (oldV && !Nvl(txfCodSala.getText()).isEmpty()) {
+                if (DBObjects.salaContains(Integer.valueOf(txfCodSala.getText()))) {
+                    int cod = Integer.valueOf(txfCodSala.getText());
+                    getCachedSessao().setSala(DBObjects.getSalaByCod(this.getClass(), cod));
+                    txfNomeSala.setText(DBObjects.getSalaByCod(this.getClass(), cod).getRefSala());
+                } else {
                     new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
                             String.format("Sala não encontrada para código %s", txfCodSala.getText())).getAlert().showAndWait();
+                    getCachedSessao().setSala(DBObjects.getSalas().get(0));
                     txfCodSala.clear();
                     txfNomeSala.clear();
                 }
@@ -191,23 +196,24 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 new String[]{"Código", "Referência", "Capacidade"}, "SELECT CODSALA, REFSALA, CAPACIDADE FROM TSALAS ORDER BY 1");
         searchSala.getStage().setOnCloseRequest(e -> {
             if (searchSala.getKeyReturn() != null) {
+                getCachedSessao().setSala(DBObjects.getSalaByCod(this.getClass(), Integer.valueOf(searchSala.getKeyReturn().get(0))));
                 txfCodSala.setText(searchSala.getKeyReturn().get(0));
                 txfNomeFilme.setText(searchSala.getKeyReturn().get(1));
-                loadTableValues();
             }
         });
         txfCodExib.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (oldV)
-                loadTableValues();
-            if (oldV && Nvl(txfCodExib.getText()).isEmpty())
+            if (oldV && Nvl(txfCodExib.getText()).isEmpty()) {
+                getCachedSessao().setExibicao(DBObjects.getExibicoes().get(0));
                 txfNomeExib.clear();
-            else if (oldV && !Nvl(txfCodExib.getText()).isEmpty()) {
-                if (DBObjects.exibContains(Integer.valueOf(txfCodExib.getText())))
-                    txfNomeExib.setText(DBObjects.getExibicaoByCod(this.getClass(),
-                            Integer.valueOf(txfCodExib.getText())).getNomeExibicao());
-                else {
+            } else if (oldV && !Nvl(txfCodExib.getText()).isEmpty()) {
+                int cod = Integer.valueOf(txfCodExib.getText());
+                if (DBObjects.exibContains(Integer.valueOf(txfCodExib.getText()))) {
+                    getCachedSessao().setExibicao(DBObjects.getExibicaoByCod(this.getClass(), cod));
+                    txfNomeExib.setText(DBObjects.getExibicaoByCod(this.getClass(), cod).getNomeExibicao());
+                } else {
                     new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
                             String.format("Exibição não encontrada para código %s", txfCodExib.getText())).getAlert().showAndWait();
+                    getCachedSessao().setExibicao(DBObjects.getExibicoes().get(0));
                     txfCodExib.clear();
                     txfNomeExib.clear();
                 }
@@ -217,23 +223,24 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 new String[]{"Código", "Nome", "Valor"}, "SELECT CODEXIB, NOMEEXIB, VLREXIB FROM TEXIBS ORDER BY 1");
         searchExib.getStage().setOnCloseRequest(e -> {
             if (searchExib.getKeyReturn() != null) {
+                getCachedSessao().setExibicao(DBObjects.getExibicaoByCod(this.getClass(), Integer.valueOf(searchExib.getKeyReturn().get(0))));
                 txfCodExib.setText(searchExib.getKeyReturn().get(0));
                 txfNomeExib.setText(searchExib.getKeyReturn().get(1));
-                loadTableValues();
             }
         });
         txfCodFilme.focusedProperty().addListener((obs, oldV, newV) -> {
-            if (oldV)
-                loadTableValues();
-            if (oldV && Nvl(txfCodFilme.getText()).isEmpty())
+            if (oldV && Nvl(txfCodFilme.getText()).isEmpty()) {
+                getCachedSessao().setFilme(DBObjects.getFilmes().get(0));
                 txfNomeFilme.clear();
-            else if (oldV && !Nvl(txfCodFilme.getText()).isEmpty()) {
-                if (DBObjects.filmeContains(Integer.valueOf(txfCodFilme.getText())))
-                    txfNomeFilme.setText(DBObjects.getFilmeByCod(this.getClass(),
-                            Integer.valueOf(txfCodFilme.getText())).getNomeFilme());
-                else {
+            } else if (oldV && !Nvl(txfCodFilme.getText()).isEmpty()) {
+                if (DBObjects.filmeContains(Integer.valueOf(txfCodFilme.getText()))) {
+                    int cod = Integer.valueOf(txfCodFilme.getText());
+                    getCachedSessao().setFilme(DBObjects.getFilmeByCod(this.getClass(), cod));
+                    txfNomeFilme.setText(DBObjects.getFilmeByCod(this.getClass(), cod).getNomeFilme());
+                } else {
                     new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
                             String.format("Filme não encontrada para código %s", txfCodFilme.getText())).getAlert().showAndWait();
+                    getCachedSessao().setFilme(DBObjects.getFilmes().get(0));
                     txfCodFilme.clear();
                     txfNomeFilme.clear();
                 }
@@ -245,10 +252,18 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                         "INNER JOIN TGENEROS GEN ON (FIL.CODGENERO = GEN.CODGENERO)");
         searchFilme.getStage().setOnCloseRequest(e -> {
             if (searchFilme.getKeyReturn() != null) {
+                getCachedSessao().setFilme(DBObjects.getFilmeByCod(this.getClass(), Integer.valueOf(searchFilme.getKeyReturn().get(0))));
                 txfCodFilme.setText(searchFilme.getKeyReturn().get(0));
                 txfNomeFilme.setText(searchFilme.getKeyReturn().get(1));
-                loadTableValues();
             }
+        });
+        dtpDataSes.valueProperty().addListener((obs, oldV, newV) -> {
+            if (isAtualizando()) return;
+            getCachedSessao().setDataHoraExib(Timestamp.valueOf(dtpDataSes.getValue().atTime(tmpHoraSes.getValue())));
+        });
+        tmpHoraSes.valueProperty().addListener((obs, oldV, newV) -> {
+            if (isAtualizando()) return;
+            getCachedSessao().setDataHoraExib(Timestamp.valueOf(dtpDataSes.getValue().atTime(tmpHoraSes.getValue())));
         });
     }
 
@@ -393,16 +408,72 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
             case Atualizar:
                 break;
             case Adicionar:
+                paneForm.setVisible(true);
+                setFrameStatus(FrameStatus.Status.Adicionando);
+                disableButtons(true);
                 break;
             case Salvar:
+                if (getFrameStatus() == FrameStatus.Status.Adicionando) {
+                    try {
+                        DBBoss.inseriSessao(this.getClass(), preSessaoObservableList);
+                        disableButtons(false);
+                        setFrameStatus(FrameStatus.Status.Visualizando);
+                        ctrlAction(FrameAction.Atualizar);
+                        sendMensagem(lblMensagem, true, "Sessoes cadastradas com sucesso");
+                    } catch (Exception ex) {
+                        new ModelException(this.getClass(),
+                                String.format("Erro ao tentar cadastrar sessão\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                    }
+                } else if (getFrameStatus() == FrameStatus.Status.Alterando) {
+                    setFrameStatus(FrameStatus.Status.Visualizando);
+                    ctrlAction(FrameAction.Atualizar);
+                    preSessaoObservableList.clear();
+                    new ModelException(this.getClass(),
+                            "Na tela de sessões não há rotina de alterações\n" +
+                                    "Caso seja necessário, exclua o movimento e lançe novamente").getAlert().showAndWait();
+                }
                 break;
             case Cancelar:
+                if (tbvLoteSessoes.getItems().size() > 0) {
+                    int resp = FormattedDialog.getYesNoDialog(this.getClass(), "Foram detectadas sessões pré-cadastradas.\n" +
+                            "Caso seja cancelado, todos esses pré-cadastros serão perdidos.\n" +
+                            "Deseja confirmar o cancelamento?", new String[]{"Confirmar e cancelar", "Reverter operação"});
+                    if (resp == 1)
+                        return;
+                }
+                preSessaoObservableList.clear();
+                setFrameStatus(FrameStatus.Status.Visualizando);
+                disableButtons(false);
+                ctrlAction(FrameAction.Atualizar);
+                sendMensagem(lblMensagem, false, "Operação cancelada pelo usuário");
                 break;
             case Editar:
+                new ModelException(this.getClass(),
+                        "Na tela de sessões não há rotina de alterações\n" +
+                                "Caso seja necessário, exclua o movimento e lançe novamente").getAlert().showAndWait();
                 break;
             case Duplicar:
                 break;
             case Excluir:
+                StringBuilder sessoes = new StringBuilder();
+                for (Sessao sessao : tbvSessoes.getSelectionModel().getSelectedItems()) {
+                    sessoes.append(String.format("\n%s ás %s", sessao.getFilme().getNomeFilme(),
+                            Functions.getDataFormatted(Functions.dataHoraFormater, sessao.getDataHoraExib())));
+                }
+                int resp = FormattedDialog.getYesNoDialog(this.getClass(),
+                        "Deseja realmente excluir a(s) sessao(ões) selecionada(s)?" + sessoes.toString(),
+                        new String[]{"Confirmar", "Cancelar"});
+                if (resp == 0)
+                    try {
+                        ArrayList<Integer> codSessoes = new ArrayList<>();
+                        tbvSessoes.getSelectionModel().getSelectedItems().forEach(sessao -> codSessoes.add(sessao.getCodSessao()));
+                        DBBoss.excluiSessao(this.getClass(), codSessoes);
+                        ctrlAction(FrameAction.Atualizar);
+                        sendMensagem(lblMensagem, true, "Sessão(ões) excluída(s) com sucesso");
+                    } catch (Exception ex) {
+                        new ModelException(this.getClass(),
+                                String.format("Erro ao tentar excluir sessão(ões)\n%s", ex.getMessage()), ex).getAlert().showAndWait();
+                    }
                 break;
             case Primeiro:
                 ctrlLinhasTab(0, false);
@@ -426,11 +497,40 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
     private void ctrlSessao(FrameAction action) {
         switch (action) {
             case Adicionar:
-                Sessao preCad = getCachedSessao();
-                preCad.setCodSessao(0);
+                if (getCachedSessao() == null) {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            "Sem informação de sessão não é possível efetuar o pré-cadastramento").getAlert().showAndWait();
+                    return;
+                } else if (getCachedSessao().getSala() == null || getCachedSessao().getSala().getCodSala() == 0) {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            "Não é possível inserir sessão sem sala").getAlert().showAndWait();
+                    return;
+                } else if (getCachedSessao().getExibicao() == null || getCachedSessao().getExibicao().getCodExibicao() == 0) {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            "Não é possível inserir sessão sem exibição").getAlert().showAndWait();
+                    return;
+                } else if (getCachedSessao().getFilme() == null || getCachedSessao().getFilme().getCodFilme() == 0) {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            "Não é possível inserir sessão sem filme").getAlert().showAndWait();
+                    return;
+                } else if (dtpDataSes.getValue() == null || tmpHoraSes.getValue() == null) {
+                    new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                            "Não é possível inserir sessão sem horário inicial").getAlert().showAndWait();
+                    return;
+                }
+                Sessao preCad = new Sessao(0,
+                        getCachedSessao().getSala(),
+                        getCachedSessao().getFilme(),
+                        getCachedSessao().getExibicao(),
+                        getCachedSessao().getDataHoraExib());
                 preSessaoObservableList.add(preCad);
+                btnAdicionar.fire();
                 break;
             case Excluir:
+                if (tbvLoteSessoes.getSelectionModel().getSelectedItems().isEmpty()) {
+                    new ModelException(this.getClass(), "Selecione alguma linha para exclusão").getAlert().showAndWait();
+                    return;
+                }
                 StringBuilder filmes = new StringBuilder();
                 for (Sessao sessao : tbvLoteSessoes.getSelectionModel().getSelectedItems()) {
                     filmes.append(String.format("\n%s - %s ás %s", sessao.getFilme().getNomeFilme(), sessao.getExibicao().getNomeExibicao(),
@@ -443,6 +543,8 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                     try {
                         tbvLoteSessoes.getItems().removeAll(tbvLoteSessoes.getSelectionModel().getSelectedItems());
                         sendMensagem(lblMensagem, true, "Pré-Cadastro(s) excluída(s) com sucesso");
+                        if (tbvLoteSessoes.getItems().size() == 0)
+                            btnCancelar.fire();
                     } catch (Exception ex) {
                         new ModelException(this.getClass(),
                                 String.format("Erro ao tentar excluir pré-cadastro(s)\n%s", ex.getMessage()), ex).getAlert().showAndWait();

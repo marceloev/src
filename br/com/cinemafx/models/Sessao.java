@@ -90,4 +90,5 @@ public class Sessao {
     public void setDataHoraFim(Timestamp dataHoraFim) {
         this.dataHoraFim = dataHoraFim;
     }
+
 }

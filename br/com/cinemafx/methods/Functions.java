@@ -2,12 +2,9 @@ package br.com.cinemafx.methods;
 
 import br.com.cinemafx.views.dialogs.ModelException;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.image.ImageViewBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -85,4 +82,5 @@ public class Functions {
         retorno = retorno.replaceAll(" ", "");
         return retorno;
     }
+
 }
