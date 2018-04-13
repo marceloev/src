@@ -250,9 +250,10 @@ public class DBBoss {
         if (sessoes == null || sessoes.isEmpty()) {
             throw new Exception("Não foram definidas sessões para o cadastro");
         }
-        for (Sessao sessao : sessoes) {
-            Conexao conex = new Conexao(invocador);
-            try {
+        Conexao conex = null;
+        try {
+            for (Sessao sessao : sessoes) {
+                conex = new Conexao(invocador);
                 conex.createStatement("INSERT INTO TSESSOES (CODSALA, CODFILME, CODEXIB, DATAHORA)\n" +
                         "VALUES (?, ?, ?, ?)");
                 conex.addParametro(sessao.getSala().getCodSala(),
@@ -261,11 +262,12 @@ public class DBBoss {
                         sessao.getDataHoraExib());
                 conex.execute();
                 sessoes.remove(sessao);
-            } catch (Exception ex) {
-                throw new Exception(ex);
-            } finally {
                 conex.desconecta();
             }
+        } catch (Exception ex) {
+            throw new Exception(ex);
+        } finally {
+            conex.desconecta();
         }
     }
 }
