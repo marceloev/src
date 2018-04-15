@@ -3,6 +3,7 @@ package br.com.cinemafx.models;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.*;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.image.Image;
@@ -13,7 +14,6 @@ public interface CadCtrlIntface {
 
     Timeline timeline = new Timeline();
     BooleanProperty atualizando = new SimpleBooleanProperty(false);
-    IntegerProperty propFrameStatus = new SimpleIntegerProperty(0);
     FrameStatus frameStatus = new FrameStatus();
     Image imgForm = new Image("/br/com/cinemafx/views/images/Icone_Modo_Formulario.png");
     Image imgGrade = new Image("/br/com/cinemafx/views/images/Icone_Modo_Grade.png");
@@ -70,12 +70,12 @@ public interface CadCtrlIntface {
 
     default void setFrameStatus(FrameStatus.Status status) {
         frameStatus.setStatus(status);
-        propFrameStatus.setValue(status.getValor());
     }
 
-    default void notifyEdit(Runnable changes) {
+    default void notifyEdit(Button btnEdit, Runnable changes) {
         if (getFrameStatus() == FrameStatus.Status.Visualizando) {
             setFrameStatus(FrameStatus.Status.Alterando);
+            btnEdit.fire();
         }
         changes.run();
     }

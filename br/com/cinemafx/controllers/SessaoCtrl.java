@@ -28,6 +28,7 @@ import java.net.URL;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 
 import static br.com.cinemafx.methods.Functions.Nvl;
@@ -94,11 +95,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         tbvSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvLoteSessoes.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tbvSessoes.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showInForm(newItem));
-        preSessaoObservableList.addListener((ListChangeListener<Sessao>) c -> {
-            if (c.next())
-                if (preSessaoObservableList.size() > 0)
-                    btnAdicionar.fire();
-        });
+        tbvLoteSessoes.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showInForm(newItem));
         tbvSessoes.setOnMouseClicked(e -> {
             if (e.getClickCount() > 1) paneForm.setVisible(true);
         });
@@ -121,9 +118,6 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
         MaskField.NumberField(txfCodSala, 11);
         MaskField.NumberField(txfCodExib, 11);
         MaskField.NumberField(txfCodFilme, 11);
-        propFrameStatus.addListener((obs, oldV, newV) -> {
-            if (newV.intValue() == 1) btnEditar.fire(); //Alterando
-        });
         txfCodSalaGrade.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV)
                 loadTableValues();
@@ -375,16 +369,10 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
 
 
     private void showInForm(Sessao sessao) {
-        if (getFrameStatus() != FrameStatus.Status.Visualizando) {
-            int choice = FormattedDialog.getYesNoDialog(this.getClass(),
-                    "Foram detectadas alterações não salvas\nDeseja salvar estas alterações antes de sair do registro?",
-                    new String[]{"Salvar", "Cancelar"});
-            if (choice == 0)
-                btnSalvar.fire();
-            if (getFrameStatus() != FrameStatus.Status.Visualizando) //Deu erro na tentativa de salvar
-                return;
+        if (sessao == null) {
+            setCachedSessao(new Sessao());
+            return;
         }
-        if (sessao == null) return;
         setAtualizando(true);
         setCachedSessao(sessao);
         txfCodSala.setText(String.valueOf(sessao.getSala().getCodSala()));
@@ -406,6 +394,17 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 paneForm.setVisible(!paneForm.isVisible());
                 break;
             case Atualizar:
+                setFrameStatus(FrameStatus.Status.Visualizando);
+                disableButtons(false);
+                loadTableValues();
+                try {
+                    tbvSessoes.getSelectionModel().select(tbvSessoes.getItems().stream()
+                            .filter(sessao -> sessao.getCodSessao() == getCachedSessao().getCodSessao())
+                            .findFirst().get());
+                } catch (NoSuchElementException ex) {
+                    sendMensagem(lblMensagem, false, "Registro pré-selecionado não existe mais");
+                    tbvSessoes.getSelectionModel().clearAndSelect(0);
+                }
                 break;
             case Adicionar:
                 paneForm.setVisible(true);
@@ -414,6 +413,11 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 break;
             case Salvar:
                 if (getFrameStatus() == FrameStatus.Status.Adicionando) {
+                    if (preSessaoObservableList.size() == 0) {
+                        new ModelDialog(this.getClass(), Alert.AlertType.WARNING,
+                                "Lance algum pré-cadastro para salvar como sessão").getAlert().showAndWait();
+                        return;
+                    }
                     try {
                         DBBoss.inseriSessao(this.getClass(), preSessaoObservableList);
                         disableButtons(false);
@@ -430,7 +434,7 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                     preSessaoObservableList.clear();
                     new ModelException(this.getClass(),
                             "Na tela de sessões não há rotina de alterações\n" +
-                                    "Caso seja necessário, exclua o movimento e lançe novamente").getAlert().showAndWait();
+                                    "Caso seja necessário, exclua a sessão e cadastre-a novamente").getAlert().showAndWait();
                 }
                 break;
             case Cancelar:
@@ -448,11 +452,16 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 sendMensagem(lblMensagem, false, "Operação cancelada pelo usuário");
                 break;
             case Editar:
-                new ModelException(this.getClass(),
+                /*new ModelException(this.getClass(),
                         "Na tela de sessões não há rotina de alterações\n" +
                                 "Caso seja necessário, exclua o movimento e lançe novamente").getAlert().showAndWait();
+                                */
                 break;
             case Duplicar:
+                /*new ModelException(this.getClass(),
+                        "Na tela de sessões não há rotina de duplicações\n" +
+                                "Isto pois, não pode haver 2 sessões idênticas em mesma sala/horário").getAlert().showAndWait();
+                                */
                 break;
             case Excluir:
                 StringBuilder sessoes = new StringBuilder();

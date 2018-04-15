@@ -251,6 +251,7 @@ public class DBBoss {
             throw new Exception("Não foram definidas sessões para o cadastro");
         }
         Conexao conex = null;
+        ArrayList<Sessao> sessoesToExc = new ArrayList<>();
         try {
             for (Sessao sessao : sessoes) {
                 conex = new Conexao(invocador);
@@ -261,13 +262,14 @@ public class DBBoss {
                         sessao.getExibicao().getCodExibicao(),
                         sessao.getDataHoraExib());
                 conex.execute();
-                sessoes.remove(sessao);
+                sessoesToExc.add(sessao);
                 conex.desconecta();
             }
         } catch (Exception ex) {
             throw new Exception(ex);
         } finally {
             conex.desconecta();
+            sessoes.removeAll(sessoesToExc);
         }
     }
 }

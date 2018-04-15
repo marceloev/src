@@ -113,9 +113,6 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
         MaskField.SpnFieldCtrl(spnDuracao, 1, 999);
         MaskField.MaxCharField(cbbGenero.getEditor(), 45);
         MaskField.CharField(txaSinopse, 4000);
-        propFrameStatus.addListener((obs, oldV, newV) -> {
-            if (newV.intValue() == 1) btnEditar.fire(); //Alterando
-        });
         txfCodigo.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV && !isAtualizando() && getFrameStatus() == FrameStatus.Status.Visualizando) { //FocusLost to Search
                 tbvFilmes.getSelectionModel().clearSelection();
@@ -147,15 +144,15 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
         });
         txfNome.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getFilmeCached().setNomeFilme(newV));
+            notifyEdit(btnEditar, () -> getFilmeCached().setNomeFilme(newV));
         });
         txfCusto.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getFilmeCached().setCustoFilme(Functions.getDoubleFrom(newV))); //Mais zero pra evitar Null
+            notifyEdit(btnEditar, () -> getFilmeCached().setCustoFilme(Functions.getDoubleFrom(newV))); //Mais zero pra evitar Null
         });
         spnDuracao.getValueFactory().valueProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getFilmeCached().setMinFilme(newV));
+            notifyEdit(btnEditar, () -> getFilmeCached().setMinFilme(newV));
         });
         cbbGenero.valueProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
@@ -165,22 +162,22 @@ public class FilmeCtrl implements Initializable, CadCtrlIntface {
                 long exists = generoObservableList.stream()
                         .filter(genero -> Functions.translate(genero).equals(Functions.translate(newV))).count();
                 if (exists > 0)
-                    notifyEdit(() -> getFilmeCached().setGenero(
+                    notifyEdit(btnEditar, () -> getFilmeCached().setGenero(
                             DBObjects.getGeneros().stream()
                                     .filter(genero -> Functions.translate(genero.getNomeGenero()).equals(Functions.translate(newV))).findFirst().get()
                     ));
                 else
-                    notifyEdit(() -> getFilmeCached().setGenero(new Genero(-1, newV)));
+                    notifyEdit(btnEditar, () -> getFilmeCached().setGenero(new Genero(-1, newV)));
             }
         });
         txaSinopse.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getFilmeCached().setSinopse(newV));
+            notifyEdit(btnEditar, () -> getFilmeCached().setSinopse(newV));
         });
         imgFilme.imageProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
             if (newV == null) imgFilme.setImage(Functions.noImageFilme);
-            notifyEdit(() -> getFilmeCached().setCartazFilme(newV));
+            notifyEdit(btnEditar, () -> getFilmeCached().setCartazFilme(newV));
         });
     }
 

@@ -90,9 +90,6 @@ public class ExibicaoCtrl implements Initializable, CadCtrlIntface {
         MaskField.NumberField(txfCodigo, 11);
         MaskField.MaxCharField(txfNome, 25);
         MaskField.MoneyField(txfValor, 11);
-        propFrameStatus.addListener((obs, oldV, newV) -> {
-            if (newV.intValue() == 1) btnEditar.fire(); //Alterando
-        });
         txfCodigo.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV && !isAtualizando() && getFrameStatus() == FrameStatus.Status.Visualizando) { //FocusLost to Search
                 tbvExibicoes.getSelectionModel().clearSelection();
@@ -124,11 +121,11 @@ public class ExibicaoCtrl implements Initializable, CadCtrlIntface {
         });
         txfNome.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getCachedExibicao().setNomeExibicao(newV));
+            notifyEdit(btnEditar, () -> getCachedExibicao().setNomeExibicao(newV));
         });
         txfValor.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getCachedExibicao().setVlrExibicao(Functions.getDoubleFrom(newV))); //Mais zero pra evitar Null
+            notifyEdit(btnEditar, () -> getCachedExibicao().setVlrExibicao(Functions.getDoubleFrom(newV))); //Mais zero pra evitar Null
         });
     }
 

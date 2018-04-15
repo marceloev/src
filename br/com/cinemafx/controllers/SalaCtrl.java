@@ -92,9 +92,6 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         MaskField.NumberField(txfCodigo, 11);
         MaskField.MaxCharField(txfReferencia, 25);
         MaskField.SpnFieldCtrl(spnCapacidade, 1, 999999);
-        propFrameStatus.addListener((obs, oldV, newV) -> {
-            if (newV.intValue() == 1) btnEditar.fire(); //Alterando
-        });
         txfCodigo.focusedProperty().addListener((obs, oldV, newV) -> {
             if (oldV && !isAtualizando() && getFrameStatus() == FrameStatus.Status.Visualizando) { //FocusLost to Search
                 tbvSalas.getSelectionModel().clearSelection();
@@ -126,11 +123,11 @@ public class SalaCtrl implements Initializable, CadCtrlIntface {
         });
         txfReferencia.textProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getCachedSala().setRefSala(newV));
+            notifyEdit(btnEditar, () -> getCachedSala().setRefSala(newV));
         });
         spnCapacidade.getValueFactory().valueProperty().addListener((obs, oldV, newV) -> {
             if (isAtualizando()) return;
-            notifyEdit(() -> getCachedSala().setCapacidade(newV));
+            notifyEdit(btnEditar, () -> getCachedSala().setCapacidade(newV));
         });
     }
 
