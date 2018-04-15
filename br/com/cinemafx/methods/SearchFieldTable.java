@@ -35,14 +35,19 @@ public class SearchFieldTable {
     private Conexao conex = new Conexao(this.getClass());
     private TableView<String[]> TbViewRetorno = new TableView<String[]>();
     private ArrayList<String> KeyReturn;
+    private String descrField = "";
+    private String query = "";
+    private ArrayList<String> colunas = new ArrayList<>();
 
     public SearchFieldTable(ImageView searchImage, String descrField, String[] colunas, String query) {
-        createTableSearch(searchImage, descrField);
-        reloadTableValue(descrField, colunas, query);
+        setDescrField(descrField);
+        setColunas(colunas);
+        setQuery(query);
+        createTableSearch(searchImage);
         createColumns(colunas);
     }
 
-    private void createTableSearch(ImageView searchImage, String descrField) {
+    private void createTableSearch(ImageView searchImage) {
         Platform.runLater(() -> {
             StackPane newRoot = new StackPane();
             Scene newScene = new Scene(newRoot, 600, 500);
@@ -101,6 +106,7 @@ public class SearchFieldTable {
 
     private void showFrameSearch() {
         setKeyReturn(null);
+        reloadTableValue(getDescrField(), getColunas(), getQuery());
         getStage().show();
     }
 
@@ -108,7 +114,7 @@ public class SearchFieldTable {
         ArrayList<String> colunas = new ArrayList<>(Arrays.asList(strColunas));
         TableColumn[] tableColumns = new TableColumn[colunas.size()];
         int index = 0;
-        for(String coluna : colunas) {
+        for (String coluna : colunas) {
             int finalIndex = index;
             tableColumns[index] = new TableColumn<>(coluna);
             tableColumns[index].setCellValueFactory((Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>)
@@ -119,10 +125,9 @@ public class SearchFieldTable {
         TbViewRetorno.getColumns().addAll(tableColumns);
     }
 
-    public void reloadTableValue(String descrField, String[] strColunas, String query) {
+    public void reloadTableValue(String descrField, ArrayList<String> colunas, String query) {
         setKeyReturn(null);
         conex.remakeConexao();
-        ArrayList<String> colunas = new ArrayList<>(Arrays.asList(strColunas));
         try {
             if (colunas == null || colunas.isEmpty()) {
                 new ModelException(this.getClass(), String.format("Estrutura de colunas não programada para pesquisa de: %s\n" +
@@ -172,5 +177,29 @@ public class SearchFieldTable {
 
     public void setStage(Stage stage) {
         this.stage = stage;
+    }
+
+    public String getDescrField() {
+        return descrField;
+    }
+
+    public void setDescrField(String descrField) {
+        this.descrField = descrField;
+    }
+
+    public ArrayList<String> getColunas() {
+        return colunas;
+    }
+
+    public void setColunas(String[] colunas) {
+        this.colunas = new ArrayList<>(Arrays.asList(colunas));
+    }
+
+    public String getQuery() {
+        return query;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
     }
 }

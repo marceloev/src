@@ -111,8 +111,10 @@
             <Cursor fx:constant="HAND" />
          </cursor>
       </JFXHamburger>
-      <VBox fx:id="boxOptions" alignment="TOP_CENTER" layoutX="582.0" layoutY="27.0" prefHeight="64.0" prefWidth="169.0" style="-fx-border-color: Gainsboro; -fx-background-color: White;" visible="false" AnchorPane.rightAnchor="4.0" AnchorPane.topAnchor="26.0">
+      <VBox fx:id="boxOptions" alignment="TOP_CENTER" prefHeight="64.0" prefWidth="169.0" style="-fx-border-color: Gainsboro; -fx-background-color: White;" AnchorPane.rightAnchor="35.0" AnchorPane.topAnchor="3.0">
          <children>
+            <JFXButton fx:id="btnAutoria" buttonType="RAISED" layoutX="11.0" layoutY="11.0" ripplerFill="#2b00ff" style="-fx-max-width: Infinity;" text="Autoria" />
+            <JFXButton fx:id="btnLog" buttonType="RAISED" layoutX="11.0" layoutY="11.0" ripplerFill="#2b00ff" style="-fx-max-width: Infinity;" text="Download do Log" />
             <JFXButton fx:id="btnAttSenha" buttonType="RAISED" ripplerFill="#2b00ff" style="-fx-max-width: Infinity;" text="Alterar Senha" />
             <JFXButton fx:id="btnDeslogar" buttonType="RAISED" layoutX="11.0" layoutY="11.0" ripplerFill="#2b00ff" style="-fx-max-width: Infinity;" text="Deslogar" />
             <JFXButton fx:id="btnSair" buttonType="RAISED" layoutX="11.0" layoutY="36.0" ripplerFill="#2b00ff" style="-fx-max-width: Infinity;" text="Sair" />

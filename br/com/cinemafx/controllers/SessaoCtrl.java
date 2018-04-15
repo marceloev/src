@@ -452,16 +452,14 @@ public class SessaoCtrl implements Initializable, CadCtrlIntface {
                 sendMensagem(lblMensagem, false, "Operação cancelada pelo usuário");
                 break;
             case Editar:
-                /*new ModelException(this.getClass(),
+                new ModelException(this.getClass(),
                         "Na tela de sessões não há rotina de alterações\n" +
                                 "Caso seja necessário, exclua o movimento e lançe novamente").getAlert().showAndWait();
-                                */
                 break;
             case Duplicar:
-                /*new ModelException(this.getClass(),
+                new ModelException(this.getClass(),
                         "Na tela de sessões não há rotina de duplicações\n" +
                                 "Isto pois, não pode haver 2 sessões idênticas em mesma sala/horário").getAlert().showAndWait();
-                                */
                 break;
             case Excluir:
                 StringBuilder sessoes = new StringBuilder();
